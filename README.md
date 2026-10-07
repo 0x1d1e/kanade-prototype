@@ -24,14 +24,14 @@ Open http://127.0.0.1:5173. Desktop-first; use a viewport of at least 1100 × 70
 
 ## 0.3.5 beat study
 
-Open **0.3.5 Beat Study** in the toolbar, or `/morph.html`. This separate motion study preserves the comparison prototype. It starts paused; click to step, drag the media sliders, or use the timeline. Space plays/pauses, Ctrl/⌘K opens commands, Escape returns to the button.
+Open **0.3.5 Beat Study** in the toolbar, or `/morph.html`. This separate motion study preserves the comparison prototype. It starts paused; click to step, drag the media sliders, or use the timeline. Space plays/pauses, Ctrl/⌘K opens commands, Escape returns to the button. With Reduced Motion, **Next beat** and Space step through held beat states; continuous playback is disabled. Day/Month are visual labels; only Week is selectable in the period preview.
 
 ```sh
 npm run morph:beats   # inspect renders/beat-sheet.png before the full render
 npm run morph:render  # 1440 square, 60fps, four blended subframes
 ```
 
-Both commands export `renders/kanade-0.3.5.html` with embedded Geist and audio; no server or network needed. The full render produces `renders/kanade-0.3.5.mp4`. Requires Chromium and ffmpeg. To regenerate audio, install Python numpy and run `npm run morph:audio`; source music downloads temporarily, never into the repository.
+Both commands export `renders/kanade-0.3.5.html` with embedded Geist and audio; no server or network needed. The full render produces `renders/kanade-0.3.5.mp4`. Requires Chromium and ffmpeg. Rendering uses committed `public/morph/soundtrack.mp3`; no audio preparation is needed. Optional audio regeneration: install Python numpy and run `npm run morph:audio`; source music downloads temporarily, never into the repository.
 
 `public/morph.html` owns the beat choreography and pure `window.seek(seconds)` renderer. Mouse/keyboard inputs drive the preview clock; export replays native inputs at beat cues and samples the same choreography independently. `public/morph/audio-analysis.json` records measured tempo, downbeat, processing offset and sound peaks. Source/license notices live in `public/morph/NOTICE.txt`.
 
@@ -49,5 +49,7 @@ The simulation is in-memory and resets on reload. Launcher actions report a mock
 npx playwright install chromium
 npm run check
 ```
+
+Install ffmpeg (including ffprobe) before `npm run check`. The browser suite runs the full `morph:render` pipeline in a temporary checkout without `renders/`, checks video/audio metadata and native input replay, and opens the standalone HTML offline. Expect several minutes for rendering.
 
 `package.json` owns the individual lint, unit-test, build and browser-test commands. Behavior and motion regressions live in `src/*.test.ts` and `tests/`.

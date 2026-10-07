@@ -47,8 +47,7 @@ try {
   if (errors.length) throw new Error(errors.join('\n'));
   console.log(`Beat frames and standalone HTML: ${out}`);
   if (full) {
-    const audio = path.join(out, 'soundtrack.wav');
-    await readFile(audio); // Regenerate with npm run morph:audio if missing.
+    const audio = path.join(root, 'public/morph/soundtrack.mp3');
     const ffmpeg = spawn('ffmpeg', ['-y', '-v', 'warning', '-f', 'image2pipe', '-framerate', '240', '-vcodec', 'mjpeg', '-i', 'pipe:0',
       '-i', audio, '-vf', "tmix=frames=4:weights='1 1 1 1',select='eq(mod(n,4),3)',setpts=N/(60*TB)",
       '-r', '60', '-frames:v', '840', '-c:v', 'libx264', '-preset', 'fast', '-crf', '18', '-pix_fmt', 'yuv420p',

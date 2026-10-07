@@ -18,6 +18,7 @@ declare global {
     seek(time: number): StudyPose;
     inspectAt(time: number): void;
     setRenderMode(value: boolean): void;
+    finishStudyPlay?: () => void;
     study: { duration: number; pose(time: number): StudyPose; spring(time: number, w?: number): number; steps(time: number, initial: number, changes: number[][], w?: number): number };
   }
 }
@@ -182,13 +183,12 @@ test('export cues hit real controls and native inputs actuate the cue clock', as
   }
 });
 
-test('assets load offline, reduced motion starts paused and prototype links to study', async ({ page }) => {
-  await page.emulateMedia({ reducedMotion: 'reduce' });
+test('local assets load, study starts paused and prototype links to study', async ({ page }) => {
   const errors: string[] = [];
   page.on('pageerror', e => errors.push(e.message));
   page.on('response', r => { if (r.status() >= 400) errors.push(r.url()); });
   await page.reload();
-  await expect(page.locator('#cursor')).toHaveCSS('display', 'none');
+  await page.evaluate(() => document.fonts.ready);
   await expect(page.getByRole('button', { name: 'Play study', exact: true })).toBeVisible();
   expect(await page.evaluate(() => document.fonts.check('500 20px Geist'))).toBe(true);
   await expect.poll(() => page.locator('#audio').evaluate(el => (el as HTMLAudioElement).readyState)).toBeGreaterThanOrEqual(2);
@@ -196,6 +196,105 @@ test('assets load offline, reduced motion starts paused and prototype links to s
   await page.goto('/');
   await page.getByRole('link', { name: '0.3.5 Beat Study' }).click();
   await expect(page).toHaveURL(/morph\.html$/);
+});
+
+test('reduced motion steps all 28 beats without autoplay, audio or ongoing choreography', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.reload();
+  await page.evaluate(async () => {
+    await document.fonts.ready;
+    (document.getElementById('audio') as HTMLAudioElement).play = () => { throw new Error('Reduced Motion must not start audio'); };
+  });
+  await expect(page.locator('#cursor')).toHaveCSS('display', 'none');
+  const next = page.getByRole('button', { name: 'Next beat', exact: true });
+  await expect(next).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Play study', exact: true })).toHaveCount(0);
+  for (let beat = 1; beat <= 28; beat++) {
+    await next.click();
+    expect(Number(await page.locator('#timeline').inputValue())).toBeCloseTo((beat % 28) * .5 + .24, 3);
+  }
+  await page.locator('#stage').focus();
+  await page.keyboard.press('Space');
+  expect(Number(await page.locator('#timeline').inputValue())).toBeCloseTo(.74, 3);
+  await expect(page.locator('#state-label')).toHaveText('02 / LOADER');
+  const time = await page.locator('#timeline').inputValue();
+  const frame = await page.locator('#stage').screenshot();
+  await page.waitForTimeout(200);
+  await expect(page.locator('#timeline')).toHaveValue(time);
+  expect((await page.locator('#stage').screenshot()).equals(frame)).toBe(true);
+  expect(await page.locator('#audio').evaluate(el => (el as HTMLAudioElement).paused)).toBe(true);
+  await page.getByRole('button', { name: 'Restart study' }).click();
+  await expect(page.locator('#timeline')).toHaveValue('0');
+  await expect(next).toBeVisible();
+});
+
+test('enabling reduced motion stops active playback and disabling it stays paused', async ({ page }) => {
+  await page.getByRole('button', { name: 'Play study', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Pause study' })).toBeVisible();
+  await expect.poll(async () => Number(await page.locator('#timeline').inputValue())).toBeGreaterThan(0);
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await expect(page.getByRole('button', { name: 'Next beat' })).toBeVisible();
+  const time = await page.locator('#timeline').inputValue();
+  await page.waitForTimeout(150);
+  await expect(page.locator('#timeline')).toHaveValue(time);
+  expect(await page.locator('#audio').evaluate(el => (el as HTMLAudioElement).paused)).toBe(true);
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await expect(page.getByRole('button', { name: 'Play study', exact: true })).toBeVisible();
+  await page.waitForTimeout(150);
+  await expect(page.locator('#timeline')).toHaveValue(time);
+});
+
+test('pending audio play cannot restart playback after preference change or pause', async ({ page }) => {
+  await page.evaluate(() => {
+    (document.getElementById('audio') as HTMLAudioElement).play = () => new Promise<void>(resolve => { window.finishStudyPlay = resolve; });
+  });
+  await page.getByRole('button', { name: 'Play study', exact: true }).click();
+  await expect.poll(() => page.evaluate(() => !!window.finishStudyPlay)).toBe(true);
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await expect(page.getByRole('button', { name: 'Next beat' })).toBeVisible();
+  await page.evaluate(() => window.finishStudyPlay?.());
+  await page.waitForTimeout(100);
+  await expect(page.getByRole('button', { name: 'Next beat' })).toBeVisible();
+  await expect(page.locator('#timeline')).toHaveValue('0');
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  const play = page.getByRole('button', { name: 'Play study', exact: true });
+  await play.click();
+  await play.click(); // Pause while audio.play() is still pending.
+  await page.evaluate(() => window.finishStudyPlay?.());
+  await page.waitForTimeout(100);
+  await expect(play).toBeVisible();
+  await expect(page.locator('#timeline')).toHaveValue('0');
+});
+
+test('period preview exposes only the functional Week button, not dead tabs', async ({ page }) => {
+  await page.evaluate(() => window.inspectAt(7.74));
+  const preview = page.getByRole('group', { name: 'Activity period preview' });
+  await expect(preview.getByRole('tab')).toHaveCount(0);
+  await expect(page.getByRole('tablist')).toHaveCount(0);
+  for (const id of ['tab-day', 'tab-month']) {
+    const label = page.locator(`#${id}`);
+    expect(await label.getAttribute('tabindex')).toBeNull();
+    expect(await label.getAttribute('role')).toBeNull();
+    expect(await label.getAttribute('aria-selected')).toBeNull();
+    await expect(label).toHaveCSS('cursor', 'auto');
+    await label.click();
+    expect(Number(await page.locator('#timeline').inputValue())).toBeCloseTo(7.74, 3);
+  }
+  const week = preview.getByRole('button', { name: 'Select Week' });
+  await expect(preview.locator('[tabindex="0"]')).toHaveCount(1);
+  await expect(week).toHaveAttribute('aria-current', 'false');
+  await week.click();
+  expect(Number(await page.locator('#timeline').inputValue())).toBeCloseTo(8.24, 3);
+  await expect(week).toHaveAttribute('aria-current', 'true');
+  await page.evaluate(() => window.inspectAt(7.74));
+  await week.focus();
+  await page.keyboard.press('Enter');
+  await expect(week).toHaveAttribute('aria-current', 'true');
+  await page.evaluate(() => window.inspectAt(7.74));
+  await week.focus();
+  await page.keyboard.press('Space');
+  await expect(week).toHaveAttribute('aria-current', 'true');
+  expect(await page.evaluate(() => document.activeElement?.id)).toBe('tab-week');
 });
 
 test('measured soundtrack peaks land exactly on the approved 120 BPM grid', () => {
