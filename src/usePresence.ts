@@ -6,10 +6,11 @@ type Entry<T> = {
   start: number;
   from: number;
   target: number;
+  duration: number;
 };
-function opacity<T>(entry: Entry<T>, now: number, duration: number) {
-  const progress = duration
-    ? Math.max(0, Math.min(1, (now - entry.start) / duration))
+function opacity<T>(entry: Entry<T>, now: number) {
+  const progress = entry.duration
+    ? Math.max(0, Math.min(1, (now - entry.start) / entry.duration))
     : 1;
   return entry.from + (entry.target - entry.from) * progress;
 }
@@ -28,6 +29,7 @@ export function usePresence<T>(
       start: now,
       from: 1,
       target: 1,
+      duration,
     })),
   );
   const previousTime = useRef(now);
@@ -35,16 +37,34 @@ export function usePresence<T>(
     const reset = now < previousTime.current;
     previousTime.current = now;
     setEntries((previous) => {
-      const existing = reset ? [] : previous;
+      const existing = reset
+        ? []
+        : previous.map((entry) =>
+            entry.duration === duration
+              ? entry
+              : {
+                  ...entry,
+                  from: opacity(entry, now),
+                  start: now,
+                  duration,
+                },
+          );
       const next = items.map((item) => {
         const found = existing.find((entry) => entry.key === key(item));
         if (!found)
-          return { key: key(item), item, start: now, from: 0, target: 1 };
+          return {
+            key: key(item),
+            item,
+            start: now,
+            from: 0,
+            target: 1,
+            duration,
+          };
         if (found.target === 0)
           return {
             ...found,
             item,
-            from: opacity(found, now, duration),
+            from: opacity(found, now),
             target: 1,
             start: now,
           };
@@ -57,11 +77,11 @@ export function usePresence<T>(
             ? entry
             : {
                 ...entry,
-                from: opacity(entry, now, duration),
+                from: opacity(entry, now),
                 target: 0,
                 start: now,
               };
-        if (opacity(exit, now, duration) > 0) next.push(exit);
+        if (opacity(exit, now) > 0) next.push(exit);
       }
       return previous.length === next.length &&
         next.every((entry, i) => entry === previous[i])
@@ -72,7 +92,7 @@ export function usePresence<T>(
   return entries.map((entry) => ({
     key: entry.key,
     item: entry.item,
-    opacity: opacity(entry, now, duration),
+    opacity: opacity(entry, now),
     exiting: entry.target === 0,
   }));
 }

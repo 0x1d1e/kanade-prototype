@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   type Action,
+  bodyIdentity,
+  contentIdentity,
   frame,
   initialState,
   presentation,
@@ -231,6 +233,27 @@ describe("local Kanade simulation", () => {
       start,
     );
     expect(one).toEqual(many);
+  });
+  it("detail changes stamp content motion without changing body identity", () => {
+    const root = run([
+      { type: "open", surface: "controls" },
+      { type: "advance", ms: 100 },
+    ]);
+    const detail = reducer(root, { type: "detail", detail: "wifi" });
+    expect(detail.motionAt).toBe(100);
+    expect(contentIdentity(root)).not.toBe(contentIdentity(detail));
+    expect(bodyIdentity(root)).toBe(bodyIdentity(detail));
+    expect(detail.satellitesAt).toBe(root.satellitesAt);
+  });
+  it("Satellite list changes record their exact replay deadline", () => {
+    const start = reducer(initialState(), { type: "replay", name: "split" });
+    const one = reducer(start, { type: "advance", ms: 4800 });
+    const many = run(
+      Array.from({ length: 240 }, (): Action => ({ type: "advance", ms: 20 })),
+      start,
+    );
+    expect(one).toEqual(many);
+    expect(one.satellitesAt).toBe(4700);
   });
   it("search ranks name starts and supports empty results", () => {
     expect(searchApps("fire")[0].name).toBe("Firefox");

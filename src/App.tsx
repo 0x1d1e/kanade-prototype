@@ -71,6 +71,16 @@ export default function App() {
       const target = e.target as HTMLElement;
       if (target.closest(".debug-panel, .mode-toolbar")) return;
       if (e.key === "Escape" && (!s.pinned || target.closest(".island-body"))) {
+        e.preventDefault();
+        if (
+          details &&
+          s.raised?.type === "surface" &&
+          s.raised.surface === "controls" &&
+          s.detail
+        ) {
+          dispatch({ type: "detail", detail: null });
+          return;
+        }
         dispatch({ type: "collapse" });
         return;
       }
@@ -88,7 +98,7 @@ export default function App() {
     };
     window.addEventListener("keydown", key);
     return () => window.removeEventListener("keydown", key);
-  }, [s.pinned, s.holdAt, s.raised, s.inside]);
+  }, [s.pinned, s.holdAt, s.raised, s.inside, s.detail, details]);
   return (
     <main
       className={`desktop mode-${s.mode} palette-${s.palette}`}

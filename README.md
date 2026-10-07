@@ -15,12 +15,12 @@ Open http://127.0.0.1:5173. Desktop-first; use a viewport of at least 1100 × 70
 
 ## Compare
 
-- Select **Baseline**, **0.3.5 Mechanical Morph**, or **Reduced Motion**. Switching modes preserves application state.
+- Select **Baseline**, **0.3.5 Mechanical Morph**, or **Reduced Motion**. Switching modes preserves application state. Mechanical keeps Baseline response timings to isolate choreography.
 - Use the scenario panel to trigger Activities, Surfaces, Banners, OSD and privacy, or replay a scripted sequence. Replay resets simulation state.
 - Pause, then step +20ms, +100ms or +1s to inspect geometry, content fades and album-art transitions. Playback speed changes simulation time, not spring parameters.
 - Hover an Activity to Peek; click to expand; right-click to Pin. Click the Rest clock for Controls.
-- Open Controls / Launcher / Notifications / Media with **Ctrl+Alt+C / L / N / M**. **Escape** backs out or collapses; **Ctrl+Alt+Escape** forces collapse. Tab reaches controls; arrow keys navigate Surfaces.
-- Enable **Controls details** for optional mock navigation. Material and overlay-palette experiments apply only in Mechanical Morph. Clean view hides comparison tools.
+- Open Controls / Launcher / Notifications / Media with **Ctrl+Alt+C / L / N / M**. **Escape** backs out or collapses; **Ctrl+Alt+Escape** forces collapse. Tab reaches controls; arrows navigate Launcher and Notifications.
+- Enable **Controls details** for mock navigation inside a fixed body. Back or Escape reverses its slide/fade. Material and overlay-palette experiments apply only in Mechanical Morph. Clean view hides comparison tools.
 
 ## Baseline and limits
 
@@ -37,4 +37,4 @@ npx playwright install chromium
 npm run check
 ```
 
-`package.json` owns the individual lint, unit-test, build and browser-test commands. Behavior regressions live in `src/model.test.ts`, `src/motion.test.ts` and `tests/prototype.spec.ts`.
+`package.json` owns the individual lint, unit-test, build and browser-test commands. Behavior and motion regressions live in `src/*.test.ts` and `tests/`.

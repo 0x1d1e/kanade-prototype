@@ -1,5 +1,12 @@
 import { motion } from "motion/react";
-import { type Dispatch, useEffect, useMemo, useRef, useState } from "react";
+import {
+  type Dispatch,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   type Action,
   type Detail,
@@ -10,6 +17,7 @@ import {
   tracks,
 } from "../model";
 import { useDissolve } from "../useDissolve";
+import { useNavigation } from "../useNavigation";
 import { AppIcon, Icon } from "./Icon";
 
 export type SurfaceProps = {
@@ -18,7 +26,72 @@ export type SurfaceProps = {
   detailsEnabled: boolean;
   passive?: boolean;
 };
-export function Controls({ state: s, dispatch, detailsEnabled }: SurfaceProps) {
+export function Controls({
+  state,
+  dispatch,
+  detailsEnabled,
+  passive = false,
+}: SurfaceProps) {
+  const navigation = useNavigation(state, detailsEnabled);
+  const container = useRef<HTMLDivElement>(null);
+  const previousKey = useRef(navigation.key);
+  const currentKey = navigation.frames.find(
+    (entry) => entry.key === navigation.key,
+  )?.key;
+  useLayoutEffect(() => {
+    if (passive || !currentKey || previousKey.current === currentKey) return;
+    const target = container.current?.querySelector<HTMLElement>(
+      '[data-nav-current="true"]',
+    );
+    if (!target) return;
+    const previous = previousKey.current;
+    previousKey.current = currentKey;
+    const returning = currentKey === "root";
+    const selector =
+      previous === "audio"
+        ? ".audio-details"
+        : `[aria-label="${previous === "wifi" ? "Wi-Fi" : "Bluetooth"} details"]`;
+    const focus =
+      (returning ? target.querySelector<HTMLElement>(selector) : null) ??
+      target.querySelector<HTMLElement>("button, input, select");
+    focus?.focus({ preventScroll: true });
+  }, [currentKey, passive]);
+  return (
+    <div className="controls-navigation" ref={container}>
+      {navigation.frames.map((entry) => {
+        const current = entry.key === navigation.key;
+        const props = {
+          state: entry.content,
+          dispatch: current ? dispatch : () => {},
+          detailsEnabled,
+          passive: passive || !current,
+        };
+        return (
+          <motion.div
+            key={entry.key}
+            className="navigation-layer"
+            data-nav-key={entry.key}
+            data-nav-current={String(current)}
+            inert={!current || passive}
+            aria-hidden={!current || passive}
+            style={{
+              x: entry.x,
+              opacity: entry.opacity,
+              zIndex: current ? 1 : 0,
+            }}
+          >
+            {entry.key === "root" ? (
+              <ControlsPage {...props} />
+            ) : (
+              <ControlsDetail {...props} />
+            )}
+          </motion.div>
+        );
+      })}
+    </div>
+  );
+}
+function ControlsPage({ state: s, dispatch, detailsEnabled }: SurfaceProps) {
   const tile = (
     key: "wifi" | "bluetooth" | "microphone" | "dnd",
     name: string,
@@ -54,14 +127,6 @@ export function Controls({ state: s, dispatch, detailsEnabled }: SurfaceProps) {
       )}
     </div>
   );
-  if (s.detail && detailsEnabled)
-    return (
-      <ControlsDetail
-        state={s}
-        dispatch={dispatch}
-        detailsEnabled={detailsEnabled}
-      />
-    );
   return (
     <div className="surface controls-content">
       <header className="surface-header">

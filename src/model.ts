@@ -12,6 +12,7 @@ export type Activity = {
   expires?: number;
   track?: number;
   seconds?: number;
+  timerUntil?: number;
   paused?: boolean;
   percent?: number;
 };
@@ -36,6 +37,7 @@ export type State = {
   now: number;
   epoch: number;
   motionAt: number;
+  satellitesAt: number;
   playing: boolean;
   mode: Mode;
   material: "solid" | "glass";
@@ -162,8 +164,11 @@ export const scenarios: Record<
       { at: 2400, event: { type: "battery", value: 18 } },
       { at: 3500, event: { type: "enter", id: "timer" } },
       { at: 4400, event: { type: "leave" } },
+      { at: 4700, event: { type: "satellite", add: true } },
       { at: 5000, event: { type: "battery", value: 18 } },
+      { at: 5300, event: { type: "satellite", add: true } },
       { at: 6200, event: { type: "timer", command: "cancel" } },
+      { at: 6600, event: { type: "satellite", add: false } },
       { at: 7200, event: { type: "battery", value: null } },
     ],
   },
@@ -201,6 +206,7 @@ export function initialState(mode: Mode = "baseline"): State {
     now: 0,
     epoch: 0,
     motionAt: 0,
+    satellitesAt: 0,
     playing: true,
     mode,
     material: "solid",
@@ -262,16 +268,48 @@ export function presentation(s: State) {
   const f = frame(s);
   return !f.primary ? "rest" : f.satellites.length ? "split" : "compact";
 }
-export function contentIdentity(s: State) {
+export function bodyIdentity(s: State) {
   const p = presentation(s),
     f = frame(s);
   if (s.raised?.type === "surface") return p;
   return `${p}:${s.raised?.type === "peek" ? s.raised.id : (f.primary?.id ?? "")}:${p === "split" ? (f.satellites[0]?.id ?? "") : ""}`;
 }
+export function contentIdentity(s: State) {
+  return presentation(s) === "controls"
+    ? `controls:${s.detail ?? "root"}`
+    : bodyIdentity(s);
+}
+
+export type SatelliteMark =
+  | { key: string; activity: Activity }
+  | { key: "overflow"; overflow: number };
+
+export function satelliteMarks(s: State): SatelliteMark[] {
+  const p = presentation(s);
+  if (!["rest", "compact", "split", "peek"].includes(p)) return [];
+  const f = frame(s);
+  const marks: SatelliteMark[] = f.satellites
+    .slice(p === "split" || p === "peek" ? 1 : 0)
+    .map((activity) => ({ key: activity.id, activity }));
+  if (f.overflow) marks.push({ key: "overflow", overflow: f.overflow });
+  return marks;
+}
+
 function stampMotion(previous: State, next: State): State {
-  return contentIdentity(previous) === contentIdentity(next)
-    ? next
-    : { ...next, motionAt: next.now };
+  const oldMarks = satelliteMarks(previous)
+    .map((mark) => mark.key)
+    .join(":");
+  const newMarks = satelliteMarks(next)
+    .map((mark) => mark.key)
+    .join(":");
+  return {
+    ...next,
+    motionAt:
+      contentIdentity(previous) === contentIdentity(next)
+        ? next.motionAt
+        : next.now,
+    satellitesAt: oldMarks === newMarks ? next.satellitesAt : next.now,
+  };
 }
 function collapse(s: State): State {
   return {
@@ -413,7 +451,15 @@ function event(s: State, a: Event): State {
         return {
           ...s,
           activities: s.activities.map((a) =>
-            a.id === "timer" ? { ...a, paused: !a.paused } : a,
+            a.id === "timer"
+              ? {
+                  ...a,
+                  paused: !a.paused,
+                  timerUntil: a.paused
+                    ? s.now + (a.seconds ?? 0) * 1000
+                    : undefined,
+                }
+              : a,
           ),
         };
       return post(s, {
@@ -421,6 +467,7 @@ function event(s: State, a: Event): State {
         kind: "timer",
         priority: 3,
         seconds: a.seconds ?? 25 * 60,
+        timerUntil: s.now + (a.seconds ?? 25 * 60) * 1000,
         paused: false,
       });
     }
@@ -447,6 +494,7 @@ function event(s: State, a: Event): State {
             kind: "timer",
             priority: 3,
             seconds: 300,
+            timerUntil: s.now + 300000,
             paused: false,
           })
         : settle({
@@ -605,8 +653,13 @@ function advanceChunk(s: State, ms: number): State {
     now: s.now + ms,
     activities: s.activities.map((a) => {
       if (a.seconds === undefined || a.paused) return a;
-      const seconds = a.seconds - ms / 1000;
-      return { ...a, seconds: seconds < 1e-9 ? 0 : seconds };
+      // Derive from one deadline; repeated fractional subtraction drifts at second boundaries.
+      const timerUntil = a.timerUntil ?? s.now + a.seconds * 1000;
+      return {
+        ...a,
+        timerUntil,
+        seconds: Math.max(0, (timerUntil - (s.now + ms)) / 1000),
+      };
     }),
   };
   // Age existing Banners before posting anything that arrives at this chunk's endpoint.
@@ -663,7 +716,7 @@ function advance(s: State, ms: number): State {
       ...next.activities.flatMap((a) => [
         a.expires,
         a.seconds !== undefined && !a.paused
-          ? next.now + a.seconds * 1000
+          ? (a.timerUntil ?? next.now + a.seconds * 1000)
           : undefined,
       ]),
       ...(!next.bannerHover
@@ -687,6 +740,7 @@ export function reducer(s: State, a: Action): State {
         ...s,
         mode: a.mode,
         motionAt: a.mode === s.mode ? s.motionAt : s.now,
+        satellitesAt: a.mode === s.mode ? s.satellitesAt : s.now,
       };
     case "material":
       return { ...s, material: a.value };

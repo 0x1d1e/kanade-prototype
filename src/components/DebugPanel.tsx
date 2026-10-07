@@ -432,7 +432,7 @@ export function DebugPanel({
                 ? "Rust geometry + coupled spring. Opaque Island."
                 : s.mode === "reduced"
                   ? "Geometry snaps. Content fades over 80ms."
-                  : "Candidate: 260ms expansion, 200ms collapse, 280ms Surface change. Later content reveal. Not an approved Rust spec."}
+                  : "Candidate: Baseline timing, shared 35% content handoff. Not an approved Rust spec."}
             </p>
           </section>
           <section className="debug-section inspector">

@@ -94,6 +94,17 @@ export class Spring {
     return Math.max(0, Math.min(1, 1 - left));
   }
 }
+export function handoff(mode: Mode) {
+  return mode === "mechanical" ? 0.35 : 0.5;
+}
+
+function contentOpacity(progress: number, split: number) {
+  return {
+    out: Math.max(0, 1 - progress / split),
+    into: Math.max(0, Math.min(1, (progress - split) / (1 - split))),
+  };
+}
+
 // kanade/src/island/fade.rs: take over the visible frame at its current opacity.
 export class Crossfade<T> {
   from: { content: T; opacity: number } | null = null;
@@ -102,9 +113,8 @@ export class Crossfade<T> {
     public target: T,
     private same: (a: T, b: T) => boolean,
   ) {}
-  shown(progress: number, reveal = 0.5): { content: T; opacity: number }[] {
-    const out = Math.max(0, 1 - 2 * progress);
-    const into = Math.max(0, Math.min(1, (progress - reveal) / (1 - reveal)));
+  shown(progress: number, split = 0.5): { content: T; opacity: number }[] {
+    const { out, into } = contentOpacity(progress, split);
     return [
       this.from && {
         content: this.from.content,
@@ -129,13 +139,11 @@ export class Crossfade<T> {
     this.target = next;
     return true;
   }
-  opacity(progress: number, reveal = 0.5) {
+  opacity(progress: number, split = 0.5) {
+    const { out, into } = contentOpacity(progress, split);
     return {
-      out: (this.from?.opacity ?? 0) * Math.max(0, 1 - 2 * progress),
-      into:
-        this.start +
-        (1 - this.start) *
-          Math.max(0, Math.min(1, (progress - reveal) / (1 - reveal))),
+      out: (this.from?.opacity ?? 0) * out,
+      into: this.start + (1 - this.start) * into,
     };
   }
 }
@@ -144,11 +152,21 @@ export class Crossfade<T> {
 export class Dissolve<T> {
   previous: T | null = null;
   spring = new Spring([1]);
+  private startRise = 0;
+  private reduced = false;
   constructor(
     public target: T,
     private same: (a: T, b: T) => boolean,
   ) {}
   to(next: T, now: number, mode: Mode) {
+    const reduced = mode === "reduced";
+    // Equal art still needs retiming when Reduced Motion changes mid-dissolve.
+    if (reduced !== this.reduced && !this.spring.settled(now)) {
+      this.startRise = this.rise(now);
+      this.spring = new Spring([this.startRise]);
+      this.spring.to([1], timings.surface, now, reduced);
+    }
+    this.reduced = reduced;
     if (this.same(this.target, next)) {
       this.target = next;
       return;
@@ -158,12 +176,16 @@ export class Dissolve<T> {
     if (
       this.previous !== null &&
       !this.spring.settled(now) &&
-      this.spring.progress(now) < 0.5
+      this.rise(now) < 0.5
     )
       return;
     this.previous = previous;
+    this.startRise = 0;
     this.spring = new Spring([0]);
-    this.spring.to([1], 220, now, mode === "reduced");
+    this.spring.to([1], timings.surface, now, reduced);
+  }
+  rise(now: number) {
+    return this.startRise + (1 - this.startRise) * this.spring.progress(now);
   }
   from(now: number) {
     return this.spring.settled(now) ? null : this.previous;
@@ -177,7 +199,6 @@ export function response(from: Presentation, to: Presentation, mode: Mode) {
   const change = surface(from) && surface(to);
   const shrinking =
     shapes[to][0] < shapes[from][0] || shapes[to][1] < shapes[from][1];
-  if (mode === "mechanical") return change ? 280 : shrinking ? 200 : 260;
   return change
     ? timings.surface
     : shrinking

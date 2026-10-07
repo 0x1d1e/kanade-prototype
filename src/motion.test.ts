@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { Crossfade, Dissolve, response, Spring, shapes } from "./motion";
+import {
+  Crossfade,
+  Dissolve,
+  handoff,
+  type Presentation,
+  response,
+  Spring,
+  shapes,
+} from "./motion";
 
 describe("Rust content transition port", () => {
   it("preserves the showing frame and opacity on every interruption and reversal", () => {
@@ -26,6 +34,42 @@ describe("Rust content transition port", () => {
       expect(fade.opacity(p).into).toBeGreaterThanOrEqual(0.6);
       expect(fade.opacity(p).out).toBe(0);
     }
+  });
+  it("Mechanical uses one 35% handoff, with no positive-length empty-content interval", () => {
+    for (const mode of ["baseline", "mechanical"] as const) {
+      const split = handoff(mode);
+      const fade = new Crossfade("rest", (a, b) => a === b);
+      fade.to("controls", 1, split);
+      for (let index = 0; index <= 1000; index++) {
+        const p = index / 1000;
+        const alpha = fade.opacity(p, split);
+        if (p !== split) expect(alpha.out + alpha.into).toBeGreaterThan(0);
+        expect(alpha.out === 0 || alpha.into === 0).toBe(true);
+      }
+      expect(fade.opacity(split, split)).toEqual({ out: 0, into: 0 });
+      const before = fade.shown(split / 2, split);
+      fade.to("launcher", split / 2, split);
+      expect(fade.shown(0, split)).toEqual(before);
+    }
+    expect(handoff("mechanical")).toBe(0.35);
+  });
+  it("Reduced retimes unchanged active art, preserving rise and finishing in 80ms", () => {
+    const dissolve = new Dissolve("first", (a, b) => a === b);
+    dissolve.to("second", 0, "baseline");
+    const before = dissolve.rise(20);
+    dissolve.to("second", 20, "reduced");
+    expect(dissolve.rise(20)).toBe(before);
+    expect(dissolve.rise(60)).toBeCloseTo(before + (1 - before) * 0.5);
+    expect(dissolve.rise(100)).toBe(1);
+    expect(dissolve.from(100)).toBeNull();
+  });
+  it("restoring baseline during a reduced dissolve preserves its visible rise", () => {
+    const dissolve = new Dissolve("first", (a, b) => a === b);
+    dissolve.to("second", 0, "reduced");
+    expect(dissolve.rise(20)).toBe(0.25);
+    dissolve.to("second", 20, "baseline");
+    expect(dissolve.rise(20)).toBe(0.25);
+    expect(dissolve.rise(240)).toBeCloseTo(0.25 + 0.75 * 0.95, 3);
   });
   it("Dissolve retains the old opaque art and takes over the same spring before halfway", () => {
     const dissolve = new Dissolve("first", (a, b) => a === b);
@@ -83,7 +127,14 @@ describe("Rust spring port", () => {
   it("experiment does not alter baseline targets or response", () => {
     expect(response("rest", "controls", "baseline")).toBe(180);
     expect(response("controls", "launcher", "baseline")).toBe(220);
-    expect(response("rest", "controls", "mechanical")).toBe(260);
+    expect(response("rest", "controls", "mechanical")).toBe(180);
+    expect(response("controls", "launcher", "mechanical")).toBe(220);
+    expect(response("controls", "rest", "mechanical")).toBe(180);
+    for (const from of Object.keys(shapes) as Presentation[])
+      for (const to of Object.keys(shapes) as Presentation[])
+        expect(response(from, to, "mechanical")).toBe(
+          response(from, to, "baseline"),
+        );
     expect(shapes.launcher).toEqual([520, 330, 32]);
   });
 });

@@ -1,7 +1,13 @@
-import { motion, useTransform } from "motion/react";
+import {
+  type MotionValue,
+  motion,
+  useMotionValue,
+  useTransform,
+} from "motion/react";
+import { useLayoutEffect } from "react";
 import {
   type Activity,
-  contentIdentity,
+  bodyIdentity,
   frame,
   presentation,
   type State,
@@ -9,8 +15,9 @@ import {
   tracks,
 } from "../model";
 import { shapes } from "../motion";
+import { type ShownSatellite, satellitePosition } from "../satellites";
 import { useMorph } from "../useMorph";
-import { usePresence } from "../usePresence";
+import { useSatellites } from "../useSatellites";
 import { Icon } from "./Icon";
 import {
   Controls,
@@ -23,22 +30,11 @@ import {
 } from "./Surfaces";
 
 export function Island({ state: s, dispatch, detailsEnabled }: SurfaceProps) {
-  const p = presentation(s),
-    f = frame(s);
-  const identity = contentIdentity(s);
+  const p = presentation(s);
+  const identity = bodyIdentity(s);
   const morph = useMorph(p, identity, s);
   const { outgoing } = morph;
-  const satelliteLeft = useTransform(morph.width, (w) => w / 2 + 6);
-  const small = ["rest", "compact", "split", "peek"].includes(p);
-  const dots = small
-    ? f.satellites.slice(p === "split" || p === "peek" ? 1 : 0)
-    : [];
-  const satellites = usePresence(
-    dots,
-    s.now,
-    s.mode === "reduced" ? 80 : 180,
-    (a) => a.id,
-  );
+  const satellites = useSatellites(s);
   const label = p === "rest" ? "Island clock. Open Controls" : `Island ${p}`;
   return (
     <div className="island-anchor">
@@ -84,6 +80,7 @@ export function Island({ state: s, dispatch, detailsEnabled }: SurfaceProps) {
                 dispatch={() => {}}
                 detailsEnabled={detailsEnabled}
                 passive
+                frozenSwap={morph.outgoingSwap}
               />
             </motion.div>
           )}
@@ -99,29 +96,54 @@ export function Island({ state: s, dispatch, detailsEnabled }: SurfaceProps) {
               state={s}
               dispatch={dispatch}
               detailsEnabled={detailsEnabled}
+              swap={morph.swap}
             />
           </motion.div>
         </motion.section>
       </motion.div>
-      <motion.div
-        className="satellites"
-        aria-hidden="true"
-        style={{ left: satelliteLeft }}
-      >
-        {satellites.map(({ key, item, opacity }) => (
-          <motion.div
-            className="satellite"
-            key={key}
-            style={{ opacity, x: -22 * (1 - opacity) }}
-          >
-            <SatelliteMark activity={item} />
-          </motion.div>
+      <div className="satellites" aria-hidden="true">
+        {satellites.map((dot) => (
+          <SatelliteDot
+            key={dot.mark.key}
+            dot={dot}
+            width={morph.width}
+            height={morph.height}
+          />
         ))}
-        {small && f.overflow > 0 && (
-          <span className="satellite">+{f.overflow}</span>
-        )}
-      </motion.div>
+      </div>
     </div>
+  );
+}
+function SatelliteDot({
+  dot,
+  width,
+  height,
+}: {
+  dot: ShownSatellite;
+  width: MotionValue<number>;
+  height: MotionValue<number>;
+}) {
+  const x = useTransform(
+    width,
+    (w) => satellitePosition(w, height.get(), dot.slot, dot.presence).x,
+  );
+  const y = useTransform(
+    height,
+    (h) => satellitePosition(width.get(), h, dot.slot, dot.presence).y,
+  );
+  return (
+    <motion.div
+      className="satellite"
+      data-mark={dot.mark.key}
+      data-leaving={String(dot.leaving)}
+      style={{ x, y, opacity: dot.opacity }}
+    >
+      {"activity" in dot.mark ? (
+        <SatelliteMark activity={dot.mark.activity} />
+      ) : (
+        `+${dot.mark.overflow}`
+      )}
+    </motion.div>
   );
 }
 function Content({
@@ -129,9 +151,19 @@ function Content({
   dispatch,
   detailsEnabled,
   passive = false,
-}: SurfaceProps & { passive?: boolean }) {
+  swap,
+  frozenSwap = 0,
+}: SurfaceProps & { swap?: MotionValue<number>; frozenSwap?: number }) {
   const p = presentation(s),
     f = frame(s);
+  const frozen = useMotionValue(frozenSwap);
+  useLayoutEffect(() => frozen.set(frozenSwap), [frozen, frozenSwap]);
+  const primaryX = useTransform(swap ?? frozen, (value) =>
+    p === "split" ? shapes.compact[0] * value : 0,
+  );
+  const trailingX = useTransform(swap ?? frozen, (value) =>
+    p === "split" ? -shapes.compact[0] * value : 0,
+  );
   if (p === "rest") {
     const minutes = 14 * 60 + 5 + Math.floor(s.now / 60000);
     return (
@@ -148,7 +180,12 @@ function Content({
   }
   if (p === "controls")
     return (
-      <Controls state={s} dispatch={dispatch} detailsEnabled={detailsEnabled} />
+      <Controls
+        state={s}
+        dispatch={dispatch}
+        detailsEnabled={detailsEnabled}
+        passive={passive}
+      />
     );
   if (p === "launcher")
     return (
@@ -183,20 +220,22 @@ function Content({
     });
   return (
     <div className={`small-content ${p}`}>
-      <button
+      <motion.button
         type="button"
         className="primary-segment"
+        style={{ x: primaryX }}
         data-activity={a.id}
         aria-label={`Open ${a.kind === "media" ? "Media" : "Controls"} for ${a.kind}`}
         onMouseEnter={() => dispatch({ type: "enter", id: a.id })}
         onClick={() => open(a)}
       >
         <ActivityContent activity={a} peek={p === "peek"} state={s} />
-      </button>
+      </motion.button>
       {p === "split" && f.satellites[0] && (
-        <button
+        <motion.button
           type="button"
           className="trailing-segment"
+          style={{ x: trailingX }}
           key={f.satellites[0].id}
           data-activity={f.satellites[0].id}
           aria-label={`Peek ${f.satellites[0].kind}`}
@@ -210,7 +249,7 @@ function Content({
             size={14}
           />
           <SatelliteMark activity={f.satellites[0]} />
-        </button>
+        </motion.button>
       )}
     </div>
   );

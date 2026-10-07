@@ -7,22 +7,22 @@ export function useDissolve<T>(value: T, key: string, state: State) {
   const dissolve = useRef(
     new Dissolve<Frame<T>>({ key, value }, (a, b) => a.key === b.key),
   );
-  const previousTime = useRef(state.now);
+  const previousEpoch = useRef(state.epoch);
   const [shown, setShown] = useState({
     from: null as T | null,
     target: value,
     rise: 1,
   });
   useLayoutEffect(() => {
-    if (state.now < previousTime.current)
+    if (state.epoch !== previousEpoch.current)
       dissolve.current = new Dissolve(
         { key, value },
         (a, b) => a.key === b.key,
       );
-    previousTime.current = state.now;
+    previousEpoch.current = state.epoch;
     dissolve.current.to({ key, value }, state.now, state.mode);
     const from = dissolve.current.from(state.now)?.value ?? null;
-    const rise = dissolve.current.spring.progress(state.now);
+    const rise = dissolve.current.rise(state.now);
     setShown((previous) =>
       previous.from === from &&
       previous.target === value &&
@@ -30,6 +30,6 @@ export function useDissolve<T>(value: T, key: string, state: State) {
         ? previous
         : { from, target: value, rise },
     );
-  }, [value, key, state.now, state.mode]);
+  }, [value, key, state.now, state.mode, state.epoch]);
   return shown;
 }
