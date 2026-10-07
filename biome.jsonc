@@ -1,0 +1,17 @@
+{
+  "$schema": "https://biomejs.dev/schemas/2.5.15/schema.json",
+  "formatter": { "indentStyle": "space", "indentWidth": 2 },
+  "overrides": [
+    {
+      "includes": ["src/styles.css"],
+      "linter": {
+        "rules": {
+          "style": {
+            // Selectors are grouped by independent UI component, not global specificity.
+            "noDescendingSpecificity": "off"
+          }
+        }
+      }
+    }
+  ]
+}
