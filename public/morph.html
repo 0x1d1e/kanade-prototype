@@ -163,9 +163,10 @@ function nextBeat(){stop();setTime(((Math.floor(now/BEAT)+1)%beatNames.length)*B
 function tick(stamp,epoch){if(!playing||epoch!==playbackEpoch)return;now=((stamp-origin)/1000)%DURATION;seek(now);requestAnimationFrame(stamp=>tick(stamp,epoch))}
 async function play(){
  if(reducedMotion.matches){nextBeat();return}
- const epoch=++playbackEpoch;playing=true;origin=performance.now()-now*1000;audio.currentTime=now;
+ const epoch=++playbackEpoch;playing=true;audio.currentTime=now;
  try{await audio.play()}catch{if(epoch===playbackEpoch){stop();$('announcement').textContent='Audio unavailable. Drag the timeline to inspect the study.'}return}
  if(epoch!==playbackEpoch||reducedMotion.matches){if(!playing)audio.pause();return}
+ origin=performance.now()-audio.currentTime*1000;
  $('transport').textContent='Pause study';requestAnimationFrame(stamp=>tick(stamp,epoch));
 }
 reducedMotion.addEventListener('change',()=>{stop();$('announcement').textContent=reducedMotion.matches?'Reduced Motion: use Next beat or Space to step. Continuous playback is off.':'Continuous playback available. Motion remains paused.'});

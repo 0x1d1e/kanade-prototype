@@ -19,6 +19,7 @@ declare global {
     inspectAt(time: number): void;
     setRenderMode(value: boolean): void;
     finishStudyPlay?: () => void;
+    firstStudyFrame?: { visual: number; audioAtTimestamp: number; startupMilliseconds: number };
     study: { duration: number; pose(time: number): StudyPose; spring(time: number, w?: number): number; steps(time: number, initial: number, changes: number[][], w?: number): number };
   }
 }
@@ -243,6 +244,45 @@ test('enabling reduced motion stops active playback and disabling it stays pause
   await page.waitForTimeout(150);
   await expect(page.locator('#timeline')).toHaveValue(time);
 });
+
+for (const start of [0, 3.24]) {
+  test(`delayed successful playback aligns its first frame with audio when starting at ${start}s`, async ({ page }) => {
+    await expect.poll(() => page.locator('#audio').evaluate(el => (el as HTMLAudioElement).readyState)).toBeGreaterThanOrEqual(2);
+    await page.evaluate(time => {
+      window.inspectAt(time);
+      const audio = document.getElementById('audio') as HTMLAudioElement;
+      const nativePlay = audio.play.bind(audio);
+      const nativeFrame = window.requestAnimationFrame.bind(window);
+      audio.play = async () => {
+        const requestedAt = performance.now();
+        await new Promise(resolve => setTimeout(resolve, 150)); // Audio has not started yet.
+        await nativePlay();
+        // Wait for real media advancement before resolving the delayed play promise.
+        while (audio.currentTime < time + .075) await new Promise(resolve => setTimeout(resolve, 10));
+        const startupMilliseconds = performance.now() - requestedAt;
+        window.requestAnimationFrame = callback => nativeFrame(stamp => {
+          window.requestAnimationFrame = nativeFrame;
+          // RAF timestamps precede callback execution; compare both clocks at that timestamp.
+          const audioAtTimestamp = audio.currentTime - (performance.now() - stamp) / 1000;
+          callback(stamp);
+          window.firstStudyFrame = {
+            visual: Number((document.getElementById('timeline') as HTMLInputElement).value),
+            audioAtTimestamp,
+            startupMilliseconds,
+          };
+        });
+      };
+    }, start);
+    await page.getByRole('button', { name: 'Play study', exact: true }).click();
+    await expect.poll(() => page.evaluate(() => window.firstStudyFrame)).toBeTruthy();
+    const frame = await page.evaluate(() => window.firstStudyFrame);
+    if (!frame) throw new Error('Missing first playback frame');
+    expect(frame.startupMilliseconds).toBeGreaterThanOrEqual(200);
+    expect(frame.audioAtTimestamp - start).toBeGreaterThan(.025);
+    expect(Math.abs(frame.visual - frame.audioAtTimestamp)).toBeLessThan(.025);
+    await page.getByRole('button', { name: 'Pause study' }).click();
+  });
+}
 
 test('pending audio play cannot restart playback after preference change or pause', async ({ page }) => {
   await page.evaluate(() => {

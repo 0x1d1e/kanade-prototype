@@ -9,9 +9,9 @@ import { expect, test } from '@playwright/test';
 const run = promisify(execFile);
 const root = fileURLToPath(new URL('../', import.meta.url));
 
-test('clean checkout renders the full film from committed assets without audio preparation', async ({ page }) => {
+test('clean checkout with URL-sensitive path renders the full film without audio preparation', async ({ page }) => {
   test.setTimeout(600_000);
-  const checkout = await mkdtemp(path.join(tmpdir(), 'kanade-render-test-'));
+  const checkout = await mkdtemp(path.join(tmpdir(), 'kanade # render-test-'));
   try {
     await mkdir(path.join(checkout, 'scripts'));
     await mkdir(path.join(checkout, 'public'));

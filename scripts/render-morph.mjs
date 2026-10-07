@@ -2,7 +2,7 @@ import { spawn } from 'node:child_process';
 import { once } from 'node:events';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { chromium } from '@playwright/test';
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
@@ -29,7 +29,7 @@ const page = await browser.newPage({ viewport: { width: 1440, height: 1440 }, de
 const errors = [];
 page.on('pageerror', error => errors.push(error.message));
 try {
-  await page.goto(`file://${standalone}`);
+  await page.goto(pathToFileURL(standalone).href);
   await page.evaluate(async () => { await document.fonts.ready; window.setRenderMode(true); });
   const stage = page.locator('#stage');
   for (let beat = 0; beat < 28; beat++) {
