@@ -26,8 +26,8 @@ export default function App() {
   );
   const [panelOpen, setPanelOpen] = useState(true),
     [speed, setSpeed] = useState(1);
-  const [details, setDetails] = useState(false),
-    [windows, setWindows] = useState(false);
+  const details = true;
+  const [windows, setWindows] = useState(false);
   const [scenario, setScenario] = useState<ScenarioName>("morph");
   const [clean, setClean] = useState(false);
   const s = state;
@@ -116,8 +116,6 @@ export default function App() {
           setOpen={setPanelOpen}
           speed={speed}
           setSpeed={setSpeed}
-          details={details}
-          setDetails={setDetails}
           windows={windows}
           setWindows={setWindows}
           scenario={scenario}
@@ -173,11 +171,14 @@ export default function App() {
       <div className="sr-only" role="status">
         {s.feedback}
       </div>
-      {s.feedback && !clean && (
-        <div className="mock-feedback" key={s.feedback}>
-          {s.feedback}
-        </div>
-      )}
+      {s.feedback &&
+        !clean &&
+        !s.feedback.toLowerCase().includes("wallpaper") &&
+        !s.feedback.toLowerCase().includes("dark gradient") && (
+          <div className="mock-feedback" key={s.feedback}>
+            {s.feedback}
+          </div>
+        )}
     </main>
   );
 }

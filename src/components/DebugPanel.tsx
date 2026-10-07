@@ -9,7 +9,6 @@ import {
   scenarios,
 } from "../model";
 import { shapes } from "../motion";
-import { Icon } from "./Icon";
 
 type Props = {
   state: State;
@@ -18,8 +17,6 @@ type Props = {
   setOpen: (open: boolean) => void;
   speed: number;
   setSpeed: (speed: number) => void;
-  details: boolean;
-  setDetails: (details: boolean) => void;
   windows: boolean;
   setWindows: (windows: boolean) => void;
   scenario: ScenarioName;
@@ -32,8 +29,6 @@ export function DebugPanel({
   setOpen,
   speed,
   setSpeed,
-  details,
-  setDetails,
   windows,
   setWindows,
   scenario,
@@ -68,47 +63,6 @@ export function DebugPanel({
           <section className="debug-section">
             <div className="debug-section-heading">
               <h2>Simulation</h2>
-              <span className={s.playing ? "live-dot" : "paused-dot"}>
-                {s.playing ? "Running" : "Paused"}
-              </span>
-            </div>
-            <div className="time-controls">
-              <button
-                type="button"
-                aria-label={s.playing ? "Pause simulation" : "Play simulation"}
-                onClick={() => dispatch({ type: "playing", value: !s.playing })}
-              >
-                <Icon name={s.playing ? "pause" : "play"} size={14} />
-              </button>
-              <output>
-                {(s.now / 1000).toFixed(1)}
-                <small>s</small>
-              </output>
-              <button
-                type="button"
-                onClick={() => dispatch({ type: "advance", ms: 20 })}
-              >
-                +20ms
-              </button>
-              <button
-                type="button"
-                onClick={() => dispatch({ type: "advance", ms: 100 })}
-              >
-                +100ms
-              </button>
-              <button
-                type="button"
-                onClick={() => dispatch({ type: "advance", ms: 1000 })}
-              >
-                +1s
-              </button>
-              <button
-                type="button"
-                className="reset-button"
-                onClick={() => dispatch({ type: "reset" })}
-              >
-                Reset
-              </button>
             </div>
             <div className="scenario-select">
               <label htmlFor="scenario">Sequence</label>
@@ -410,14 +364,6 @@ export function DebugPanel({
                 <option value="solid">Opaque baseline</option>
                 <option value="glass">Glass experiment</option>
               </select>
-            </label>
-            <label className="debug-check">
-              <input
-                type="checkbox"
-                checked={details}
-                onChange={(e) => setDetails(e.target.checked)}
-              />
-              Controls details <span>Optional mock navigation</span>
             </label>
             <label className="debug-check">
               <input

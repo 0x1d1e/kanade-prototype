@@ -92,6 +92,40 @@ export function Controls({
   );
 }
 function ControlsPage({ state: s, dispatch, detailsEnabled }: SurfaceProps) {
+  const handleToggle = (key: "wifi" | "bluetooth" | "microphone" | "dnd") => {
+    dispatch({ type: "toggle", key });
+    if (key === "wifi") {
+      dispatch({
+        type: "notice",
+        urgency: "normal",
+        content: {
+          app: "Wi-Fi",
+          title: !s.wifi ? "Wi-Fi Connected" : "Wi-Fi Turned Off",
+          body: !s.wifi ? (s.network || "Connected to Studio") : "Wi-Fi is now turned off",
+        },
+      });
+    } else if (key === "bluetooth") {
+      dispatch({
+        type: "notice",
+        urgency: "normal",
+        content: {
+          app: "Bluetooth",
+          title: !s.bluetooth ? "Bluetooth Connected" : "Bluetooth Turned Off",
+          body: !s.bluetooth ? (s.device || "Connected to AirPods Pro") : "Bluetooth is now turned off",
+        },
+      });
+    } else if (key === "dnd") {
+      dispatch({
+        type: "notice",
+        urgency: !s.dnd ? "critical" : "normal",
+        content: {
+          app: "Do Not Disturb",
+          title: !s.dnd ? "Do Not Disturb: On" : "Do Not Disturb: Off",
+          body: !s.dnd ? "Notifications are silenced" : "Normal notifications",
+        },
+      });
+    }
+  };
   const tile = (
     key: "wifi" | "bluetooth" | "microphone" | "dnd",
     name: string,
@@ -105,7 +139,7 @@ function ControlsPage({ state: s, dispatch, detailsEnabled }: SurfaceProps) {
         className={`control-tile ${s[key] ? "on" : ""}`}
         aria-label={`${name}: ${status}`}
         aria-pressed={s[key]}
-        onClick={() => dispatch({ type: "toggle", key })}
+        onClick={() => handleToggle(key)}
       >
         <span className="tile-knob">
           <Icon name={icon} />
@@ -162,8 +196,29 @@ function ControlsPage({ state: s, dispatch, detailsEnabled }: SurfaceProps) {
         {tile("dnd", "Do Not Disturb", s.dnd ? "On" : "Off", "moon")}
       </div>
       <div className="control-levels">
-        <Level state={s} dispatch={dispatch} kind="volume" />
-        <Level state={s} dispatch={dispatch} kind="brightness" />
+        <div className="level-card sound-card">
+          <div className="level-header-row">
+            <span className="level-title">Sound</span>
+            {detailsEnabled && (
+              <button
+                type="button"
+                className="audio-details apple-audio-route"
+                aria-label="Audio details"
+                onClick={() => dispatch({ type: "detail", detail: "audio" })}
+              >
+                <span>{s.device || "Speakers"}</span>
+                <Icon name="forward" size={11} />
+              </button>
+            )}
+          </div>
+          <Level state={s} dispatch={dispatch} kind="volume" />
+        </div>
+        <div className="level-card brightness-card">
+          <div className="level-header-row">
+            <span className="level-title">Display</span>
+          </div>
+          <Level state={s} dispatch={dispatch} kind="brightness" />
+        </div>
       </div>
       <fieldset className="profiles" aria-label="Power profile">
         {["Power saver", "Balanced", "Performance"].map((value) => (
@@ -177,22 +232,13 @@ function ControlsPage({ state: s, dispatch, detailsEnabled }: SurfaceProps) {
           </button>
         ))}
       </fieldset>
-      {detailsEnabled && (
-        <button
-          type="button"
-          className="audio-details"
-          onClick={() => dispatch({ type: "detail", detail: "audio" })}
-        >
-          Audio details <Icon name="forward" size={12} />
-        </button>
-      )}
     </div>
   );
 }
 function ControlsDetail({ state: s, dispatch }: SurfaceProps) {
   const [scanUntil, setScanUntil] = useState(0);
   const scanning = s.now < scanUntil;
-  const [output, setOutput] = useState("Built-in speakers");
+  const [noiseMode, setNoiseMode] = useState<"anc" | "off" | "transparency">("anc");
   const detail = s.detail ?? "wifi";
   const title =
     detail === "wifi"
@@ -204,8 +250,34 @@ function ControlsDetail({ state: s, dispatch }: SurfaceProps) {
     detail === "wifi"
       ? ["Studio", "Kanade Guest", "Atelier"]
       : ["AirPods Pro", "MX Master 3", "Keychron K2"];
+
+  const handleDetailToggle = () => {
+    const isWifi = detail === "wifi";
+    const currentlyOn = isWifi ? s.wifi : s.bluetooth;
+    dispatch({
+      type: "toggle",
+      key: isWifi ? "wifi" : "bluetooth",
+    });
+    dispatch({
+      type: "notice",
+      urgency: "normal",
+      content: {
+        app: isWifi ? "Wi-Fi" : "Bluetooth",
+        title: !currentlyOn ? `${title} Connected` : `${title} Turned Off`,
+        body: !currentlyOn
+          ? isWifi
+            ? s.network || "Connected to Studio"
+            : s.device || "Connected to AirPods Pro"
+          : `${title} is now turned off`,
+      },
+    });
+  };
+
+  const activeMedia = s.activities.find((a) => a.kind === "media");
+  const currentTrack = activeMedia ? tracks[activeMedia.track ?? 0] : tracks[0];
+
   return (
-    <div className="surface detail-content">
+    <div className={`surface detail-content apple-detail-${detail}`}>
       <header className="surface-header">
         <button
           type="button"
@@ -219,40 +291,126 @@ function ControlsDetail({ state: s, dispatch }: SurfaceProps) {
         <small className="experiment-label">Prototype detail</small>
       </header>
       {detail === "audio" ? (
-        <>
-          <label className="device-select">
-            Output{" "}
-            <select
-              aria-label="Audio output"
-              value={output}
-              onChange={(e) => setOutput(e.target.value)}
+        <div className="apple-audio-view">
+          {activeMedia && (
+            <div className="apple-audio-now-playing">
+              <Cover art={currentTrack.art} small />
+              <div className="now-playing-words">
+                <strong>{currentTrack.title}</strong>
+                <small>{currentTrack.artist}</small>
+              </div>
+              <button
+                type="button"
+                className="mini-play-btn"
+                aria-label={activeMedia.paused ? "Play" : "Pause"}
+                onClick={() => dispatch({ type: "media", command: "pause" })}
+              >
+                <Icon name={activeMedia.paused ? "play" : "pause"} size={13} />
+              </button>
+            </div>
+          )}
+
+          <div className="apple-group-card">
+            <div className="group-card-header">
+              <span>OUTPUT DESTINATIONS</span>
+            </div>
+            {[
+              { id: "Built-in speakers", label: "Built-in speakers", sub: "MacBook Pro Speakers", icon: "speaker" },
+              { id: "AirPods Pro", label: "AirPods Pro", sub: "Spatial Audio · 94% battery", icon: "bluetooth" },
+            ].map((out) => {
+              const active = (s.device || "Built-in speakers") === out.id;
+              return (
+                <button
+                  type="button"
+                  key={out.id}
+                  className={`apple-route-row ${active ? "active-route" : ""}`}
+                  onClick={() => dispatch({ type: "connect", key: "device", value: out.id })}
+                >
+                  <Icon name={out.icon} size={18} />
+                  <div className="route-info">
+                    <strong>{out.label}</strong>
+                    <small>{out.sub}</small>
+                  </div>
+                  {active && <span className="apple-checkmark">✓</span>}
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="apple-volume-card">
+            <div className="volume-slider-header">
+              <span className="slider-label">Master Volume</span>
+              <span className="slider-val">{s.volume}%</span>
+            </div>
+            <Level state={s} dispatch={dispatch} kind="volume" />
+          </div>
+
+          {s.device === "AirPods Pro" && (
+            <div className="apple-group-card noise-control-group">
+              <div className="group-card-header">
+                <span>NOISE CONTROL</span>
+              </div>
+              <div className="noise-mode-pills">
+                {(
+                  [
+                    { id: "anc", label: "Noise Cancellation" },
+                    { id: "off", label: "Off" },
+                    { id: "transparency", label: "Transparency" },
+                  ] as const
+                ).map((m) => (
+                  <button
+                    type="button"
+                    key={m.id}
+                    className={`noise-pill ${noiseMode === m.id ? "active" : ""}`}
+                    onClick={() => setNoiseMode(m.id)}
+                  >
+                    {m.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className="apple-group-card">
+            <div className="group-card-header">
+              <span>INPUT</span>
+            </div>
+            <button
+              type="button"
+              className="detail-row apple-list-row"
+              onClick={() => dispatch({ type: "toggle", key: "microphone" })}
             >
-              <option>Built-in speakers</option>
-              <option>AirPods Pro</option>
-            </select>
-          </label>
-          <Level state={s} dispatch={dispatch} kind="volume" />
-          <label className="device-select">
-            Input{" "}
-            <select aria-label="Audio input">
-              <option>Built-in microphone</option>
-              <option>USB microphone</option>
-            </select>
-          </label>
-          <button
-            type="button"
-            className="detail-row"
-            onClick={() => dispatch({ type: "toggle", key: "microphone" })}
-          >
-            <Icon name="microphone" />
-            <span>Microphone</span>
-            <small>{s.microphone ? "On" : "Muted"}</small>
-          </button>
-        </>
+              <Icon name="microphone" />
+              <span>Microphone</span>
+              <small>{s.microphone ? "On" : "Muted"}</small>
+            </button>
+          </div>
+        </div>
       ) : (
         <>
+          <div className="apple-toggle-card">
+            <div className="apple-toggle-info">
+              <Icon name={detail === "wifi" ? "wifi-far" : "bluetooth"} size={22} />
+              <div>
+                <strong>{title}</strong>
+                <small>
+                  {(detail === "wifi" ? s.wifi : s.bluetooth)
+                    ? (detail === "wifi" ? s.network || "Connected" : s.device || "Connected")
+                    : "Off"}
+                </small>
+              </div>
+            </div>
+            <button
+              type="button"
+              className={`apple-switch ${(detail === "wifi" ? s.wifi : s.bluetooth) ? "on" : ""}`}
+              aria-label={(detail === "wifi" ? s.wifi : s.bluetooth) ? `Turn ${title} off` : `Turn ${title} on`}
+              onClick={handleDetailToggle}
+            >
+              <span className="switch-knob" />
+            </button>
+          </div>
           <div className="detail-heading">
-            <span>{detail === "wifi" ? "Networks" : "Devices"}</span>
+            <span>{detail === "wifi" ? "MY NETWORKS" : "MY DEVICES"}</span>
             <button
               type="button"
               onClick={() => setScanUntil(s.now + 700)}
@@ -261,52 +419,41 @@ function ControlsDetail({ state: s, dispatch }: SurfaceProps) {
               {scanning ? "Scanning…" : "Scan"}
             </button>
           </div>
-          {choices.map((name, i) => {
-            const on = detail === "wifi" ? s.wifi : s.bluetooth;
-            const selected =
-              (detail === "wifi" ? s.network : s.device) === name && on;
-            return (
-              <button
-                type="button"
-                className="detail-row"
-                key={name}
-                disabled={!on}
-                onClick={() =>
-                  dispatch({
-                    type: "connect",
-                    key: detail === "wifi" ? "network" : "device",
-                    value: selected ? "" : name,
-                  })
-                }
-              >
-                <Icon name={detail === "wifi" ? "wifi-far" : "bluetooth"} />
-                <span>{name}</span>
-                <small>
-                  {selected
-                    ? "Connected"
-                    : i === 2
-                      ? "Available"
-                      : detail === "wifi"
-                        ? "Secured"
-                        : "Paired"}
-                </small>
-              </button>
-            );
-          })}
-          <button
-            type="button"
-            className="detail-radio"
-            onClick={() =>
-              dispatch({
-                type: "toggle",
-                key: detail === "wifi" ? "wifi" : "bluetooth",
-              })
-            }
-          >
-            {(detail === "wifi" ? s.wifi : s.bluetooth)
-              ? `Turn ${title} off`
-              : `Turn ${title} on`}
-          </button>
+          <div className="apple-device-list">
+            {choices.map((name, i) => {
+              const on = detail === "wifi" ? s.wifi : s.bluetooth;
+              const selected =
+                (detail === "wifi" ? s.network : s.device) === name && on;
+              return (
+                <button
+                  type="button"
+                  className={`detail-row apple-list-row ${selected ? "selected-row" : ""}`}
+                  key={name}
+                  disabled={!on}
+                  onClick={() =>
+                    dispatch({
+                      type: "connect",
+                      key: detail === "wifi" ? "network" : "device",
+                      value: selected ? "" : name,
+                    })
+                  }
+                >
+                  <Icon name={detail === "wifi" ? "wifi-far" : "bluetooth"} />
+                  <span>{name}</span>
+                  <small>
+                    {selected
+                      ? "Connected"
+                      : i === 2
+                        ? "Available"
+                        : detail === "wifi"
+                          ? "Secured"
+                          : "Paired"}
+                  </small>
+                  {selected && <span className="apple-checkmark">✓</span>}
+                </button>
+              );
+            })}
+          </div>
         </>
       )}
     </div>
@@ -583,15 +730,6 @@ export function Media({ state: s, dispatch }: SurfaceProps) {
         <button
           type="button"
           disabled={!activity}
-          className="icon-button"
-          aria-label="Previous track"
-          onClick={() => dispatch({ type: "media", command: "change" })}
-        >
-          <Icon name="previous" size={20} />
-        </button>
-        <button
-          type="button"
-          disabled={!activity}
           className="play-button"
           aria-label={activity?.paused ? "Play" : "Pause"}
           onClick={() => dispatch({ type: "media", command: "pause" })}
@@ -609,6 +747,34 @@ export function Media({ state: s, dispatch }: SurfaceProps) {
         </button>
         <div className="media-volume">
           <Level state={s} dispatch={dispatch} kind="volume" />
+        </div>
+      </div>
+      <div className="media-footer-controls">
+        <button
+          type="button"
+          className="media-cc-btn"
+          aria-label="Open Control Center"
+          onClick={() => dispatch({ type: "open", surface: "controls" })}
+        >
+          <span>Control Center</span>
+          <Icon name="forward" size={11} />
+        </button>
+        <div className="media-output-select-wrap">
+          <Icon name="speaker" size={13} />
+          <select
+            aria-label="Audio output destination"
+            value={s.device || "Built-in speakers"}
+            onChange={(e) =>
+              dispatch({
+                type: "connect",
+                key: "device",
+                value: e.target.value,
+              })
+            }
+          >
+            <option>Built-in speakers</option>
+            <option>AirPods Pro</option>
+          </select>
         </div>
       </div>
     </div>

@@ -48,7 +48,13 @@ export function Overlays({
             data-testid="banner"
             inert={exiting}
             aria-hidden={exiting || undefined}
-            style={{ opacity, x: experiment ? 20 * (1 - opacity) : 0 }}
+            style={{
+              opacity,
+              y: (1 - opacity) * -28,
+              scaleY: 0.4 + 0.6 * opacity,
+              scaleX: 0.55 + 0.45 * opacity,
+              transformOrigin: "top center",
+            }}
           >
             <div className="banner-top">
               <span className="notification-icon">

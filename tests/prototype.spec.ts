@@ -140,12 +140,6 @@ test("switchable detail experiment and materials never silently change Baseline"
     .getByRole("button", { name: "Controls", exact: true })
     .click();
   await panel(page).getByRole("button", { name: "+1s", exact: true }).click();
-  await expect(
-    island(page).getByRole("button", { name: "Wi-Fi details" }),
-  ).toHaveCount(0);
-  await panel(page)
-    .getByRole("checkbox", { name: /Controls details/ })
-    .check();
   await island(page)
     .getByRole("button", { name: "Wi-Fi details", exact: true })
     .click();

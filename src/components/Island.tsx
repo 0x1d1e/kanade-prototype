@@ -4,8 +4,9 @@ import {
   useMotionValue,
   useTransform,
 } from "motion/react";
-import { useLayoutEffect } from "react";
+import { type Dispatch, useLayoutEffect } from "react";
 import {
+  type Action,
   type Activity,
   bodyIdentity,
   frame,
@@ -174,15 +175,20 @@ function Content({
   );
   if (p === "rest") {
     const minutes = 14 * 60 + 5 + Math.floor(s.now / 60000);
+    const timeStr = `${String(Math.floor(minutes / 60) % 24).padStart(2, "0")}:${String(minutes % 60).padStart(2, "0")}`;
     return (
       <button
         type="button"
-        className="rest-content"
+        className={`rest-content ${s.inside ? "rest-peeking" : ""}`}
         aria-label="Open Controls"
         onClick={() => dispatch({ type: "open", surface: "controls" })}
       >
-        {String(Math.floor(minutes / 60) % 24).padStart(2, "0")}:
-        {String(minutes % 60).padStart(2, "0")}
+        <span className="rest-clock-glyph">
+          <Icon name="clock" size={13} />
+        </span>
+        <span className="rest-time-str">{timeStr}</span>
+        {s.inside && <span className="rest-date-peek">Wed, Oct 7</span>}
+        <IslandPrivacyDots state={s} />
       </button>
     );
   }
@@ -237,7 +243,12 @@ function Content({
         onMouseEnter={() => dispatch({ type: "enter", id: a.id })}
         onClick={() => open(a)}
       >
-        <ActivityContent activity={a} peek={p === "peek"} state={s} />
+        <ActivityContent
+          activity={a}
+          peek={p === "peek"}
+          state={s}
+          dispatch={dispatch}
+        />
       </motion.button>
       {p === "split" && f.satellites[0] && (
         <motion.button
@@ -266,10 +277,12 @@ function ActivityContent({
   activity: a,
   peek,
   state: s,
+  dispatch,
 }: {
   activity: Activity;
   peek: boolean;
   state: State;
+  dispatch: Dispatch<Action>;
 }) {
   if (a.kind === "media") {
     const track = tracks[a.track ?? 0];
@@ -281,6 +294,15 @@ function ActivityContent({
           artist={peek ? track.artist : undefined}
           state={s}
         />
+        <div
+          className={`dynamic-equalizer ${a.paused ? "paused" : "playing"}`}
+          aria-hidden="true"
+        >
+          <span className="eq-bar bar-1" />
+          <span className="eq-bar bar-2" />
+          <span className="eq-bar bar-3" />
+          <span className="eq-bar bar-4" />
+        </div>
         <Icon name={a.paused ? "pause" : "wave-far"} size={16} />
       </>
     );
@@ -288,14 +310,44 @@ function ActivityContent({
   if (a.kind === "timer")
     return (
       <>
-        <Icon name="stopwatch" size={peek ? 24 : 18} />
+        <span className="timer-icon-badge">
+          <Icon name="stopwatch" size={peek ? 24 : 18} />
+        </span>
         <span className="activity-words">
           <strong>{a.paused ? "Paused" : "Timer"}</strong>
           {peek && <small>25m timer</small>}
         </span>
-        <span className={`timer-number ${a.paused ? "muted" : ""}`}>
+        <span className={`timer-number ${a.paused ? "muted" : "active-timer"}`}>
           {timerClock(a.seconds)}
         </span>
+        <div
+          className="timer-inline-actions"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <button
+            type="button"
+            className="timer-action-btn"
+            aria-label={a.paused ? "Resume timer" : "Pause timer"}
+            onClick={(e) => {
+              e.stopPropagation();
+              dispatch({ type: "timer", command: "pause" });
+            }}
+          >
+            <Icon name={a.paused ? "play" : "pause"} size={11} />
+          </button>
+          <button
+            type="button"
+            className="timer-action-btn stop"
+            aria-label="Stop timer"
+            onClick={(e) => {
+              e.stopPropagation();
+              dispatch({ type: "timer", command: "cancel" });
+            }}
+          >
+            <Icon name="dismiss" size={11} />
+          </button>
+        </div>
+        <IslandPrivacyDots state={s} />
       </>
     );
   if (a.kind === "battery")
@@ -312,20 +364,26 @@ function ActivityContent({
           </strong>
           {peek && <small>Connect a charger</small>}
         </span>
-        <span className={a.priority === 5 ? "critical" : "capture-amber"}>
+        <span className={`battery-number ${a.priority === 5 ? "critical" : "capture-amber"}`}>
           {a.percent}%
         </span>
+        <IslandPrivacyDots state={s} />
       </>
     );
+  const minutes = 14 * 60 + 5 + Math.floor(s.now / 60000);
+  const timeStr = `${String(Math.floor(minutes / 60) % 24).padStart(2, "0")}:${String(minutes % 60).padStart(2, "0")}`;
   return (
     <>
-      <strong>Workspace 2</strong>
+      <span className="workspace-clock">
+        <Icon name="clock" size={13} /> {timeStr}
+      </span>
       <div className="workspace-pager">
         <i />
         <i className="current" />
         <i />
         <i />
       </div>
+      <IslandPrivacyDots state={s} />
     </>
   );
 }
@@ -347,6 +405,19 @@ function SatelliteMark({ activity: a }: { activity: Activity }) {
         : a.kind === "battery"
           ? `${a.percent}%`
           : "♫"}
+    </span>
+  );
+}
+export function IslandPrivacyDots({ state: s }: { state: State }) {
+  const hasMic = s.privacy.microphone;
+  const hasCam = s.privacy.camera;
+  const hasCapture = s.privacy.capture;
+  if (!hasMic && !hasCam && !hasCapture) return null;
+  return (
+    <span className="island-privacy-dots" aria-label="Privacy indicators">
+      {hasCam && <i className="privacy-dot dot-camera" title="Camera" />}
+      {hasMic && <i className="privacy-dot dot-mic" title="Microphone" />}
+      {hasCapture && <i className="privacy-dot dot-capture" title="Screen Capture" />}
     </span>
   );
 }

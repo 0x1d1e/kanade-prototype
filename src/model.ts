@@ -81,7 +81,7 @@ export type Event =
   | { type: "battery"; value: number | null }
   | { type: "satellite"; add: boolean }
   | { type: "workspace" }
-  | { type: "notice"; urgency?: Notice["urgency"] }
+  | { type: "notice"; urgency?: Notice["urgency"]; content?: Partial<Notice> }
   | { type: "bannerClose"; id: number; action?: boolean }
   | { type: "dismiss"; id: number }
   | { type: "clearNotices" }
@@ -508,7 +508,7 @@ function event(s: State, a: Event): State {
         expires: s.now + 1200,
       });
     case "notice":
-      return notice(s, a.urgency ?? "normal");
+      return notice(s, a.urgency ?? "normal", a.content);
     case "bannerClose": {
       const next = fillQueue({
         ...s,
@@ -618,8 +618,15 @@ function event(s: State, a: Event): State {
       return { ...s, privacy: { ...s.privacy, [a.key]: !s.privacy[a.key] } };
     case "profile":
       return { ...s, profile: a.value };
-    case "launch":
-      return { ...collapse(s), feedback: `Mock launch: ${a.name}` };
+    case "launch": {
+      const isWallpaper =
+        a.name.toLowerCase().includes("wallpaper") ||
+        a.name.toLowerCase().includes("dark gradient");
+      return {
+        ...collapse(s),
+        feedback: isWallpaper ? "" : `Mock launch: ${a.name}`,
+      };
+    }
   }
 }
 function record(s: State, a: Event): State {
@@ -786,8 +793,65 @@ export function reducer(s: State, a: Action): State {
       return record({ ...s, replay: null }, a);
   }
 }
-export function searchApps(query: string) {
-  const words = query.toLowerCase().trim().split(/\s+/).filter(Boolean);
+export type LauncherItem = {
+  name: string;
+  description: string;
+  icon: string;
+};
+
+const emojiCatalog: LauncherItem[] = [
+  { name: "✨ Sparkles", description: "Emoji", icon: "browser" },
+  { name: "🚀 Rocket", description: "Emoji", icon: "browser" },
+  { name: "💡 Idea", description: "Emoji", icon: "browser" },
+  { name: "🎉 Party", description: "Emoji", icon: "browser" },
+  { name: "☕ Coffee", description: "Emoji", icon: "browser" },
+];
+
+const wallpaperCatalog: LauncherItem[] = [
+  { name: "Wallpaper: Iris", description: "Change wallpaper", icon: "browser" },
+];
+
+export function searchApps(query: string): LauncherItem[] {
+  const trimmed = query.trim();
+  const lower = trimmed.toLowerCase();
+  const words = lower.split(/\s+/).filter(Boolean);
+
+  // Provider: Calculator (e.g. "12 * 8", "45 + 55", "100 / 4")
+  if (/^[\d\s+\-*/().^]+$/.test(trimmed) && /[+\-*/]/.test(trimmed)) {
+    try {
+      const sanitized = trimmed.replace(/\^/g, "**");
+      if (/^[\d\s+\-*/().]+$/.test(sanitized)) {
+        const val = Function(`"use strict"; return (${sanitized})`)();
+        if (typeof val === "number" && !Number.isNaN(val) && Number.isFinite(val)) {
+          return [
+            {
+              name: `= ${val}`,
+              description: `Calculator · ${trimmed} = ${val}`,
+              icon: "terminal",
+            },
+          ];
+        }
+      }
+    } catch {
+      // ignore parse errors
+    }
+  }
+
+  // Provider: Emoji (e.g. ":rocket", ":sparkles" or "emoji")
+  if (lower.startsWith(":") || lower === "emoji") {
+    const term = lower.replace(/^:/, "");
+    const matched = emojiCatalog.filter((e) =>
+      !term || e.name.toLowerCase().includes(term) || e.description.toLowerCase().includes(term),
+    );
+    if (matched.length > 0) return matched;
+  }
+
+  // Provider: Wallpaper (e.g. "wallpaper" or "wall")
+  if (lower.startsWith("wallpaper") || lower === "wall") {
+    return wallpaperCatalog;
+  }
+
+  // Provider: Apps
   return apps
     .filter((a) =>
       words.every((w) =>
@@ -796,8 +860,8 @@ export function searchApps(query: string) {
     )
     .sort(
       (a, b) =>
-        Number(!a.name.toLowerCase().startsWith(query.toLowerCase())) -
-          Number(!b.name.toLowerCase().startsWith(query.toLowerCase())) ||
+        Number(!a.name.toLowerCase().startsWith(lower)) -
+          Number(!b.name.toLowerCase().startsWith(lower)) ||
         a.name.localeCompare(b.name),
     );
 }
