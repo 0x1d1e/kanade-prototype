@@ -15,7 +15,11 @@ import {
   tracks,
 } from "../model";
 import { shapes } from "../motion";
-import { type ShownSatellite, satellitePosition } from "../satellites";
+import {
+  type ShownSatellite,
+  satelliteOpacity,
+  satellitePosition,
+} from "../satellites";
 import { useMorph } from "../useMorph";
 import { useSatellites } from "../useSatellites";
 import { Icon } from "./Icon";
@@ -131,12 +135,16 @@ function SatelliteDot({
     height,
     (h) => satellitePosition(width.get(), h, dot.slot, dot.presence).y,
   );
+  const opacity = useTransform(
+    height,
+    (h) => satelliteOpacity(h) * dot.opacity,
+  );
   return (
     <motion.div
       className="satellite"
       data-mark={dot.mark.key}
       data-leaving={String(dot.leaving)}
-      style={{ x, y, opacity: dot.opacity }}
+      style={{ x, y, opacity }}
     >
       {"activity" in dot.mark ? (
         <SatelliteMark activity={dot.mark.activity} />

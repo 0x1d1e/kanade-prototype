@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { SatelliteMark } from "./model";
-import { Satellites, satellitePosition } from "./satellites";
+import { shapes } from "./motion";
+import { Satellites, satelliteOpacity, satellitePosition } from "./satellites";
 
 const activity = (key: string): SatelliteMark => ({
   key,
@@ -14,6 +15,25 @@ const a = activity("a"),
   b = activity("b");
 
 describe("Rust Satellite spring port", () => {
+  it("fades only with body height between Peek and the smallest Surface", () => {
+    for (const shape of [
+      shapes.rest,
+      shapes.compact,
+      shapes.split,
+      shapes.peek,
+    ])
+      expect(satelliteOpacity(shape[1])).toBe(1);
+    for (const shape of [
+      shapes.media,
+      shapes.controls,
+      shapes.notifications,
+      shapes.launcher,
+    ])
+      expect(satelliteOpacity(shape[1])).toBe(0);
+    expect(satelliteOpacity((shapes.peek[1] + shapes.media[1]) / 2)).toBe(0.5);
+    expect(satelliteOpacity(0)).toBe(1);
+    expect(satelliteOpacity(1000)).toBe(0);
+  });
   it("emerges with the baseline presence spring and tucked geometry", () => {
     const dots = new Satellites();
     dots.follow([a], 0, "baseline");

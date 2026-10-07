@@ -93,6 +93,20 @@ export class Satellites {
   }
 }
 
+// island/geometry.rs::satellite_opacity: whole through Peek, gone by Media.
+export function satelliteOpacity(height: number) {
+  return (
+    1 -
+    Math.max(
+      0,
+      Math.min(
+        1,
+        (height - shapes.peek[1]) / (shapes.media[1] - shapes.peek[1]),
+      ),
+    )
+  );
+}
+
 // Coordinates relative to the body's top center, from island/geometry.rs::satellite.
 export function satellitePosition(
   width: number,

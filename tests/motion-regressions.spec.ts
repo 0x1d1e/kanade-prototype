@@ -82,6 +82,44 @@ test("detail navigation preserves body geometry and reverses both visible layers
   await expect(incoming(page).locator(".navigation-layer")).toHaveCount(1);
 });
 
+for (const delay of ["+20ms", "+1s"]) {
+  test(`re-enabling Controls details uses current time after ${delay}`, async ({
+    page,
+  }) => {
+    await controls(page);
+    await button(page, "Wi-Fi details").click();
+    await step(page, "+1s");
+    const option = page.getByRole("checkbox", { name: /Controls details/ });
+    await option.uncheck();
+    await step(page, delay);
+    const root = await pose(layer(page, "root"));
+    const wifi = (await layer(page, "wifi").count())
+      ? await pose(layer(page, "wifi"))
+      : { x: 12, opacity: 0 };
+    await option.check();
+    await expect(layer(page, "wifi")).toHaveAttribute(
+      "data-nav-current",
+      "true",
+    );
+    await expect
+      .poll(async () => (await pose(layer(page, "root"))).opacity)
+      .toBeCloseTo(root.opacity, 5);
+    expect((await pose(layer(page, "root"))).x).toBeCloseTo(root.x, 3);
+    expect((await pose(layer(page, "wifi"))).opacity).toBeCloseTo(
+      wifi.opacity,
+      5,
+    );
+    expect((await pose(layer(page, "wifi"))).x).toBeCloseTo(wifi.x, 3);
+    await step(page, "+20ms");
+    await expect
+      .poll(async () => (await pose(layer(page, "wifi"))).opacity)
+      .toBeGreaterThan(wifi.opacity);
+    await step(page, "+1s");
+    await expect(layer(page, "wifi")).toHaveCSS("opacity", "1");
+    await expect(incoming(page).locator(".navigation-layer")).toHaveCount(1);
+  });
+}
+
 test("detail navigation cannot restart an unfinished body spring", async ({
   page,
 }) => {
@@ -220,7 +258,7 @@ test("Satellites emerge with springs, reverse without alpha jumps, and retime in
     await island(page).evaluate((element) => getComputedStyle(element).width),
   );
   expect(first.x).toBeCloseTo(width / 2 - 28 + 34 * first.opacity, 2);
-  await button(page, "Controls").click();
+  await battery(page, "Clear");
   await expect(dot).toHaveAttribute("data-leaving", "true");
   expect((await pose(dot)).opacity).toBeCloseTo(first.opacity, 5);
   await step(page, "+20ms");
@@ -228,13 +266,112 @@ test("Satellites emerge with springs, reverse without alpha jumps, and retime in
     .poll(async () => (await pose(dot)).opacity)
     .toBeLessThan(first.opacity);
   const leaving = await pose(dot);
-  await button(page, "Collapse").click();
+  await battery(page, "Low");
+  // Keep Battery below the top Satellite, which is rendered as a Split segment.
+  await button(page, "Add").click();
   await expect(dot).toHaveAttribute("data-leaving", "false");
   expect((await pose(dot)).opacity).toBeCloseTo(leaving.opacity, 5);
   await button(page, "Reduced Motion").click();
   expect((await pose(dot)).opacity).toBeCloseTo(leaving.opacity, 5);
   await step(page);
   await expect(dot).toHaveCSS("opacity", "1");
+});
+
+test("Surfaces retain Satellite springs and hide them using body geometry", async ({
+  page,
+}) => {
+  await button(page, "25m").click();
+  await battery(page, "Low");
+  await button(page, "Add").click();
+  await step(page, "+1s");
+  await step(page, "+1s");
+  const dot = page.locator('.satellite[data-mark="timer"]');
+  await expect(dot).toHaveCSS("opacity", "1");
+  const element = await dot.elementHandle();
+  const assertShapeOpacity = async () => {
+    const height = await island(page).evaluate((e) =>
+      parseFloat(getComputedStyle(e).height),
+    );
+    const expected = 1 - Math.max(0, Math.min(1, (height - 52) / (216 - 52)));
+    await expect
+      .poll(async () => (await pose(dot)).opacity)
+      .toBeCloseTo(expected, 3);
+    await expect(dot).toHaveAttribute("data-leaving", "false");
+    expect(await element?.evaluate((node) => node.isConnected)).toBe(true);
+  };
+  for (const surface of ["Controls", "Media", "Notifications", "Launcher"]) {
+    const before = await pose(dot);
+    await button(page, surface).click();
+    await button(page, "Pin").click();
+    await expect(
+      page.locator('.satellite[data-mark="battery"]'),
+    ).toHaveAttribute("data-leaving", "false");
+    expect((await pose(dot)).x).toBeCloseTo(before.x, 3);
+    await assertShapeOpacity();
+    await step(page, "+20ms");
+    await assertShapeOpacity();
+    const turning = await pose(dot);
+    await button(page, "Collapse").click();
+    expect((await pose(dot)).x).toBeCloseTo(turning.x, 3);
+    expect((await pose(dot)).opacity).toBeCloseTo(turning.opacity, 5);
+    await step(page, "+1s");
+    await expect(dot).toHaveCSS("opacity", "1");
+    await button(page, surface).click();
+    await button(page, "Pin").click();
+    for (let i = 0; i < 5; i++) {
+      await step(page, "+20ms");
+      await assertShapeOpacity();
+    }
+    await step(page, "+1s");
+    await expect(page.locator(".satellite")).toHaveCount(2);
+    await expect(dot).toHaveCSS("opacity", "0");
+    await assertShapeOpacity();
+    await button(page, "Collapse").click();
+    for (let i = 0; i < 5; i++) {
+      await step(page, "+20ms");
+      await assertShapeOpacity();
+    }
+    await step(page, "+1s");
+    await expect(dot).toHaveCSS("opacity", "1");
+    await expect.poll(async () => (await pose(dot)).x).toBe(156);
+  }
+});
+
+test("the body covers the tucked portion of an entering Satellite", async ({
+  page,
+}) => {
+  await button(page, "25m").click();
+  await battery(page, "Low");
+  await button(page, "Add").click();
+  await step(page, "+20ms");
+  const dot = page.locator('.satellite[data-mark="battery"]');
+  await expect.poll(async () => (await pose(dot)).opacity).toBeGreaterThan(0);
+  const stack = await page.locator(".island-anchor").evaluate((anchor) => {
+    const body = anchor.querySelector<HTMLElement>(".island-hit-area");
+    const satellites = anchor.querySelector<HTMLElement>(".satellites");
+    const dot = satellites?.querySelector<HTMLElement>(".satellite");
+    const surface = anchor.querySelector(".island-body");
+    if (!body || !satellites || !dot || !surface)
+      throw new Error("Missing Island stacking elements");
+    const bodyRect = surface.getBoundingClientRect();
+    const dotRect = dot.getBoundingClientRect();
+    // Enable hit-testing just for this probe; painting order is unchanged.
+    satellites.style.pointerEvents = "auto";
+    const top = document.elementFromPoint(
+      Math.max(bodyRect.left, dotRect.left) + 1,
+      dotRect.top + dotRect.height / 2,
+    );
+    satellites.style.pointerEvents = "";
+    return {
+      bodyZ: Number(getComputedStyle(body).zIndex),
+      satellitesZ: Number(getComputedStyle(satellites).zIndex),
+      overlap: dotRect.left < bodyRect.right,
+      covered: !!top?.closest(".island-hit-area"),
+    };
+  });
+  expect(stack.bodyZ).toBeGreaterThan(stack.satellitesZ);
+  expect(stack.overlap).toBe(true);
+  expect(stack.covered).toBe(true);
 });
 
 test("overflow is an animated stable mark, not an instant counter", async ({

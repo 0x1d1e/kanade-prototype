@@ -286,7 +286,6 @@ export type SatelliteMark =
 
 export function satelliteMarks(s: State): SatelliteMark[] {
   const p = presentation(s);
-  if (!["rest", "compact", "split", "peek"].includes(p)) return [];
   const f = frame(s);
   const marks: SatelliteMark[] = f.satellites
     .slice(p === "split" || p === "peek" ? 1 : 0)

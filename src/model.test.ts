@@ -8,6 +8,7 @@ import {
   presentation,
   reducer,
   type State,
+  satelliteMarks,
   searchApps,
 } from "./model";
 
@@ -244,6 +245,41 @@ describe("local Kanade simulation", () => {
     expect(contentIdentity(root)).not.toBe(contentIdentity(detail));
     expect(bodyIdentity(root)).toBe(bodyIdentity(detail));
     expect(detail.satellitesAt).toBe(root.satellitesAt);
+  });
+  it("keeps all Frame Satellite marks in Surfaces, excluding the top only in Split/Peek", () => {
+    const split = run([
+      { type: "timer", command: "start" },
+      ...Array.from(
+        { length: 4 },
+        (): Action => ({ type: "satellite", add: true }),
+      ),
+      { type: "advance", ms: 2000 },
+    ]);
+    const satellites = frame(split).satellites.map((activity) => activity.id);
+    const keys = (s: State) => satelliteMarks(s).map((mark) => mark.key);
+    expect(keys(split)).toEqual([...satellites.slice(1), "overflow"]);
+    const peek = run(
+      [
+        { type: "enter", id: split.primary ?? undefined },
+        { type: "advance", ms: 120 },
+      ],
+      split,
+    );
+    expect(presentation(peek)).toBe("peek");
+    expect(keys(peek)).toEqual(keys(split));
+    for (const surface of [
+      "controls",
+      "media",
+      "notifications",
+      "launcher",
+    ] as const) {
+      const expanded = reducer(split, { type: "open", surface });
+      expect(keys(expanded)).toEqual([...satellites, "overflow"]);
+      expect(expanded.satellitesAt).toBe(split.now);
+      const settled = reducer(expanded, { type: "advance", ms: 1000 });
+      expect(keys(settled)).toEqual(keys(expanded));
+      expect(keys(reducer(settled, { type: "collapse" }))).toEqual(keys(split));
+    }
   });
   it("Satellite list changes record their exact replay deadline", () => {
     const start = reducer(initialState(), { type: "replay", name: "split" });
