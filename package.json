@@ -10,7 +10,10 @@
     "lint": "eslint .",
     "test": "vitest run",
     "test:e2e": "playwright test",
-    "check": "npm run lint && npm run test && npm run build && npm run test:e2e"
+    "check": "npm run lint && npm run test && npm run build && npm run test:e2e",
+    "morph:audio": "python3 scripts/morph-audio.py",
+    "morph:beats": "node scripts/render-morph.mjs",
+    "morph:render": "node scripts/render-morph.mjs --full"
   },
   "dependencies": {
     "motion": "^12.23.24",

@@ -1,0 +1,159 @@
+{
+  "song": "Minimal Techno 01",
+  "artist": "Alejandro Maga\u00f1a (A. M.)",
+  "source": "https://assets.mixkit.co/music/162/162.mp3",
+  "license": "https://mixkit.co/license/#musicFree",
+  "rough_bpm": 127.94970986460349,
+  "measured_bpm": 127.99999999999982,
+  "tempo_ratio": 0.9375000000000013,
+  "source_downbeat": 33,
+  "source_downbeat_peak_seconds": 15.029115646258504,
+  "output_processing_offset_seconds": -0.013666666666666716,
+  "downbeat_basis": "Downbeat inferred from the source opening as beat 1; choose beat 33 (bar 9). Spectral-flux peak refines alignment; remeasure after atempo.",
+  "output_bpm": 120,
+  "duration_seconds": 14,
+  "beat_grid": [
+    0.0,
+    0.5,
+    1.0,
+    1.5,
+    2.0,
+    2.5,
+    3.0,
+    3.5,
+    4.0,
+    4.5,
+    5.0,
+    5.5,
+    6.0,
+    6.5,
+    7.0,
+    7.5,
+    8.0,
+    8.5,
+    9.0,
+    9.5,
+    10.0,
+    10.5,
+    11.0,
+    11.5,
+    12.0,
+    12.5,
+    13.0,
+    13.5
+  ],
+  "ui_cues": [
+    {
+      "kind": "click",
+      "beat_seconds": 0.5,
+      "source_peak_sample": 85,
+      "placement_seconds": 0.49822916666666667,
+      "measured_peak_seconds": 0.5
+    },
+    {
+      "kind": "confirm",
+      "beat_seconds": 1.5,
+      "source_peak_sample": 101,
+      "placement_seconds": 1.4978958333333334,
+      "measured_peak_seconds": 1.5
+    },
+    {
+      "kind": "click",
+      "beat_seconds": 2.5,
+      "source_peak_sample": 182,
+      "placement_seconds": 2.496208333333333,
+      "measured_peak_seconds": 2.5
+    },
+    {
+      "kind": "click",
+      "beat_seconds": 3,
+      "source_peak_sample": 85,
+      "placement_seconds": 2.9982291666666665,
+      "measured_peak_seconds": 3.0
+    },
+    {
+      "kind": "grab",
+      "beat_seconds": 3.5,
+      "source_peak_sample": 85,
+      "placement_seconds": 3.4982291666666665,
+      "measured_peak_seconds": 3.5
+    },
+    {
+      "kind": "release",
+      "beat_seconds": 4.5,
+      "source_peak_sample": 98,
+      "placement_seconds": 4.497958333333333,
+      "measured_peak_seconds": 4.5
+    },
+    {
+      "kind": "grab",
+      "beat_seconds": 5,
+      "source_peak_sample": 82,
+      "placement_seconds": 4.998291666666667,
+      "measured_peak_seconds": 5.0
+    },
+    {
+      "kind": "release",
+      "beat_seconds": 6,
+      "source_peak_sample": 126,
+      "placement_seconds": 5.997375,
+      "measured_peak_seconds": 6.0
+    },
+    {
+      "kind": "click",
+      "beat_seconds": 7,
+      "source_peak_sample": 107,
+      "placement_seconds": 6.997770833333333,
+      "measured_peak_seconds": 7.0
+    },
+    {
+      "kind": "click",
+      "beat_seconds": 8,
+      "source_peak_sample": 105,
+      "placement_seconds": 7.9978125,
+      "measured_peak_seconds": 8.0
+    },
+    {
+      "kind": "hover",
+      "beat_seconds": 10,
+      "source_peak_sample": 77,
+      "placement_seconds": 9.998395833333333,
+      "measured_peak_seconds": 10.0
+    },
+    {
+      "kind": "click",
+      "beat_seconds": 11,
+      "source_peak_sample": 105,
+      "placement_seconds": 10.9978125,
+      "measured_peak_seconds": 11.0
+    },
+    {
+      "kind": "key",
+      "beat_seconds": 11.5,
+      "source_peak_sample": 119,
+      "placement_seconds": 11.497520833333333,
+      "measured_peak_seconds": 11.5
+    },
+    {
+      "kind": "key",
+      "beat_seconds": 12,
+      "source_peak_sample": 120,
+      "placement_seconds": 11.9975,
+      "measured_peak_seconds": 12.0
+    },
+    {
+      "kind": "confirm",
+      "beat_seconds": 12.5,
+      "source_peak_sample": 96,
+      "placement_seconds": 12.498,
+      "measured_peak_seconds": 12.5
+    },
+    {
+      "kind": "release",
+      "beat_seconds": 13,
+      "source_peak_sample": 72,
+      "placement_seconds": 12.9985,
+      "measured_peak_seconds": 13.0
+    }
+  ]
+}

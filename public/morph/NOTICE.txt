@@ -1,0 +1,25 @@
+Kanade 0.3.5 beat study - third-party assets
+
+Music: Minimal Techno 01
+Artist: Alejandro Magaña (A. M.)
+Source page: https://mixkit.co/free-stock-music/tech-house/
+Source recording: https://assets.mixkit.co/music/162/162.mp3
+License: Mixkit Stock Music Free License
+https://mixkit.co/license/#musicFree
+https://mixkit.co/license/modal/musicFree/
+Terms: https://mixkit.co/terms/
+
+The bundled audio is a 14-second excerpt adapted from 128 to 120 BPM,
+with original UI cues, solely as the soundtrack to this visual study.
+The full source recording is not distributed here.
+Mixkit permits commercial and non-commercial web/social-media visual projects.
+Its license excludes CDs/DVDs, games, TV/radio broadcasts, music-only remixes,
+ownership claims and rights-management registration. Check the linked terms
+before repurposing the music; this repository's code does not license the music.
+
+Font: Geist, by Vercel
+Source: https://github.com/vercel/geist-font
+Latin variable subset: https://fonts.gstatic.com/s/geist/v5/gyByhwUxId8gMEwcGFU.woff2
+License: SIL Open Font License 1.1, reproduced in OFL.txt.
+
+UI sound cues and album-art geometry are original to this study.

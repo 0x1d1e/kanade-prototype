@@ -139,6 +139,9 @@ export default function App() {
                 </button>
               ))}
             </fieldset>
+            <a className="beat-study-link" href="/morph.html">
+              0.3.5 Beat Study ↗
+            </a>
             <span className="toolbar-divider" />
           </>
         )}

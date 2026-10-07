@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#eeece7">
+<title>Kanade 0.3.5 / Beat study</title>
+<style>
+@font-face{font-family:Geist;src:url('./morph/geist.woff2') format('woff2');font-weight:400 700;font-display:block}
+*{box-sizing:border-box}[hidden]{display:none!important}body{margin:0;background:#eeece7;color:#171717;font-family:Geist,sans-serif}button,input,a{font:inherit}button,a{color:inherit}button{cursor:pointer}button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid #171717;outline-offset:6px}
+#stage{display:block;width:min(100vw,100vh);height:min(100vw,100vh);margin:auto;background:#eeece7}svg text{font-family:Geist,sans-serif}#cursor{pointer-events:none} [role=button],[role=switch],[role=tab],[role=slider]{cursor:pointer} [tabindex]:focus{outline:none}body:not([data-render=true]) #stage [tabindex]:focus-visible{outline:2px solid #b7b4ae;outline-offset:4px}
+.controls{width:min(100%,900px);padding:20px 24px 28px;margin:auto;display:flex;align-items:center;gap:20px;font-size:13px}.controls button{border:1px solid #ccc8c0;background:transparent;padding:9px 15px;border-radius:30px;min-height:40px}.controls input{flex:1;min-width:50px;accent-color:#171717}.controls a{text-decoration:none;white-space:nowrap}.credits{max-width:900px;margin:0 auto;padding:0 24px 28px;color:#68655f;font-size:12px;line-height:1.6}.credits a{color:inherit}.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
+@media(max-width:600px){.controls{gap:10px}.controls a{display:none}}@media(prefers-reduced-motion:reduce){#cursor{display:none}}
+</style>
+</head>
+<body>
+<svg id="stage" viewBox="0 0 1440 1440" xmlns="http://www.w3.org/2000/svg" aria-label="Kanade: a continuous, interactive UI morph study" tabindex="-1">
+<defs><clipPath id="surface-clip"><rect id="clip"/></clipPath></defs>
+<g fill="#171717"><text x="88" y="100" font-size="24" font-weight="600" letter-spacing="-0.7">kanade</text><text x="1352" y="100" text-anchor="end" font-size="17" fill="#77736b">0.3.5 / BEAT STUDY</text></g>
+<g id="camera">
+<rect id="surface" fill="#080808"/>
+<g clip-path="url(#surface-clip)" fill="#faf9f6">
+<rect id="liquid-shape" fill="#faf9f6"/>
+<g id="button" role="button" tabindex="0" aria-label="Start morph"><rect x="-115" y="-38" width="230" height="76" fill="transparent"/><text x="-15" y="8" font-size="23" font-weight="500" text-anchor="middle">Let's go</text><path d="M61 -5 68 2 61 9M51 2H68" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" color="#faf9f6"/></g>
+<g id="loader"><circle r="12" fill="none" stroke="#444" stroke-width="2.5"/><path id="loader-arc" d="M0 -12A12 12 0 0 1 12 0" fill="none" stroke="#faf9f6" stroke-width="2.5" stroke-linecap="round"/></g>
+<g id="check"><path id="check-line" d="m-12 0 8 8 17-18" fill="none" stroke="#faf9f6" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" pathLength="1"/></g>
+<g id="island" role="button" tabindex="0" aria-label="Expand music player"><rect x="-120" y="-32" width="240" height="64" fill="transparent"/><g transform="translate(-88 0)"><rect x="-16" y="-16" width="32" height="32" rx="8" fill="#292929"/><circle r="10" fill="none" stroke="#bbb" stroke-width="1"/><circle r="3"/></g><text x="-56" y="-2" font-size="11" fill="#aaa">NOW PLAYING</text><text x="-56" y="14" font-size="14" font-weight="500">Minimal Techno</text><g id="island-wave" stroke="#faf9f6" stroke-width="2" stroke-linecap="round"></g></g>
+<g id="player">
+<g transform="translate(-212 -83)"><rect x="-32" y="-32" width="64" height="64" rx="13" fill="#272727"/><circle r="23" fill="none" stroke="#888" stroke-width="1"/><circle r="15" fill="none" stroke="#666" stroke-width="1"/><circle r="4"/><path d="m-18 -18 36 36" stroke="#aaa" stroke-width="1"/></g>
+<text x="-160" y="-91" font-size="14" fill="#a3a19d">MIXKIT / A. M.</text><text x="-160" y="-61" font-size="25" font-weight="500" letter-spacing="-0.6">Minimal Techno 01</text><text x="244" y="-85" font-size="23" text-anchor="end" fill="#a3a19d">···</text>
+<g id="play-control" role="button" tabindex="0" aria-label="Play or pause music"><circle cy="-2" r="29" fill="#faf9f6"/><path id="play-left" fill="#080808"/><path id="play-right" fill="#080808"/></g>
+<g fill="none" stroke="#ccc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m-104-9-12 7 12 7zM-120-9V5"/><path d="m104-9 12 7-12 7zM120-9V5"/></g>
+<g id="scrub-control" role="slider" tabindex="0" aria-label="Playback progress" aria-valuemin="0" aria-valuemax="100"><rect x="-244" y="65" width="488" height="6" rx="3" fill="#333"/><rect id="progress-fill" x="-244" y="65" height="6" rx="3"/><circle id="progress-knob" cy="68" r="6"/><rect x="-244" y="48" width="488" height="40" fill="transparent"/></g><text id="elapsed" x="-244" y="100" font-size="12" fill="#999">0:42</text><text x="244" y="100" font-size="12" text-anchor="end" fill="#999">2:04</text>
+</g>
+<g id="volume" role="slider" tabindex="0" aria-label="Volume" aria-valuemin="0" aria-valuemax="100"><g transform="translate(-159 0)" fill="none" stroke="#faf9f6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M-10-4H-5L2-10V10L-5 4H-10Z"/><path d="M7-5Q13 0 7 5M11-9Q21 0 11 9"/></g><rect id="volume-track" x="-122" y="-5" height="10" rx="5" fill="#363636"/><rect id="volume-fill" x="-122" y="-5" height="10" rx="5"/><circle id="volume-knob" cy="0" r="11"/><text id="volume-value" x="175" y="5" text-anchor="end" font-size="14" fill="#bbb">68</text><rect x="-140" y="-25" width="300" height="50" fill="transparent"/></g>
+<g id="toggle" role="switch" tabindex="0" aria-label="Focus mode" aria-checked="false"><rect x="-74" y="-38" width="148" height="76" fill="transparent"/><path id="toggle-check" d="m-8 0 5 5 10-11" fill="none" stroke="#080808" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></g>
+<g id="tabs" role="tablist" aria-label="Activity period"><g id="tab-day" role="tab" tabindex="0" aria-selected="true" aria-label="Day"><rect x="-186" y="-26" width="120" height="52" fill="transparent"/><text x="-126" y="6" text-anchor="middle" font-size="17">Day</text></g><g id="tab-week" role="tab" tabindex="0" aria-selected="false" aria-label="Week"><rect x="-60" y="-26" width="120" height="52" fill="transparent"/><text y="6" text-anchor="middle" font-size="17">Week</text></g><g id="tab-month" role="tab" tabindex="0" aria-selected="false" aria-label="Month"><rect x="66" y="-26" width="120" height="52" fill="transparent"/><text x="126" y="6" text-anchor="middle" font-size="17">Month</text></g></g>
+<g id="chart"><text x="-254" y="-106" font-size="14" fill="#aaa">FOCUS TIME</text><text x="-254" y="-67" font-size="33" font-weight="500" letter-spacing="-1">24.8<tspan font-size="16" fill="#999"> hrs</tspan></text><text x="254" y="-105" text-anchor="end" font-size="13" fill="#aaa">THIS WEEK</text><g stroke="#2b2b2b" stroke-width="1"><path d="M-254-20H254M-254 30H254M-254 80H254"/></g><path id="chart-line" d="M-254 68C-227 68-213 24-176 29S-121 61-92 19S-39 46 0 3S53 27 85-25S132 24 169-12S214-54 254-60" fill="none" stroke="#faf9f6" stroke-width="2.5" stroke-linecap="round" pathLength="1"/><g id="chart-labels" fill="#888" font-size="12"><text x="-254" y="117">MON</text><text x="-88" y="117" text-anchor="middle">WED</text><text x="85" y="117" text-anchor="middle">FRI</text><text x="254" y="117" text-anchor="end">SUN</text></g><g id="tooltip"><path d="M85-21V88" stroke="#777" stroke-width="1" stroke-dasharray="3 4"/><circle cx="85" cy="-25" r="5" fill="#080808" stroke="#faf9f6" stroke-width="2"/><rect x="45" y="-74" width="82" height="29" rx="8" fill="#faf9f6"/><text x="86" y="-55" fill="#080808" text-anchor="middle" font-size="12" font-weight="500">4.2 hrs</text></g></g>
+<g id="command" role="button" tabindex="0" aria-label="Open command palette"><rect x="-74" y="-38" width="148" height="76" fill="transparent"/><text y="10" text-anchor="middle" font-size="32" font-weight="500" letter-spacing="1">⌘ K</text></g>
+<g id="palette"><g fill="none" stroke="#999" stroke-width="1.7" stroke-linecap="round"><circle cx="-240" cy="-108" r="7"/><path d="m-235-103 5 5"/></g><text id="query" x="-213" y="-101" font-size="19" fill="#bbb">Search commands...</text><path id="caret" d="M-192-119V-96" stroke="#faf9f6" stroke-width="1.5"/><rect x="223" y="-122" width="33" height="23" rx="5" fill="#252525"/><text x="239" y="-106" font-size="10" text-anchor="middle" fill="#aaa">esc</text><path d="M-276-82H276" stroke="#292929"/>
+<text x="-250" y="-52" font-size="11" fill="#888" letter-spacing="1">SUGGESTED</text>
+<g id="focus-result" role="button" tabindex="0" aria-label="Enable Focus mode"><rect x="-268" y="-34" width="536" height="56" rx="10" fill="#242424"/><path d="M-232-19A11 11 0 1 0-220-7 9 9 0 0 1-232-19Z" fill="none" stroke="#faf9f6" stroke-width="1.6"/><text x="-200" y="0" font-size="17">Enable Focus mode</text><text x="240" y="0" text-anchor="end" font-size="17" fill="#aaa">↵</text></g>
+<g id="other-results" fill="#bbb"><text x="-237" y="58" font-size="18">◷</text><text x="-200" y="58" font-size="17">Start a timer</text><text x="-237" y="110" font-size="18">♫</text><text x="-200" y="110" font-size="17">Open music</text></g>
+<text id="filter-hint" x="-250" y="75" font-size="13" fill="#888">1 matching command</text>
+</g>
+<g id="toast"><circle cx="-122" r="13" fill="#faf9f6"/><path d="m-128 0 4 4 8-9" fill="none" stroke="#080808" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><text x="-95" y="6" font-size="18" font-weight="500">Focus is on</text><text x="126" y="5" text-anchor="end" font-size="12" fill="#999">Done</text></g>
+</g>
+</g>
+<g id="cursor" fill="#171717" stroke="#eeece7" stroke-width="1.5" stroke-linejoin="round"><path id="cursor-path"/></g>
+<g id="ruler"></g>
+<text id="state-label" x="88" y="1250" fill="#171717" font-size="23" font-weight="500">01 / BUTTON</text><text id="beat-label" x="1352" y="1250" text-anchor="end" fill="#77736b" font-size="16">BAR 01 / BEAT 01</text>
+<text x="88" y="1370" font-size="14" fill="#77736b">120 BPM · 7 BARS · ONE CONTINUOUS SURFACE</text><text x="1352" y="1370" text-anchor="end" font-size="14" fill="#77736b">1440 × 1440 / 60 FPS</text>
+</svg>
+<div class="controls" aria-label="Study playback"><button id="transport" type="button">Play study</button><button id="restart" type="button" aria-label="Restart study">↺</button><input id="timeline" type="range" min="0" max="14" step="0.001" value="0" aria-label="Study time"><output id="clock">0.00 / 14.00</output><a href="/">← Prototype</a></div>
+<p class="credits">Click the surface to step through the study. Drag progress or volume; use arrows on sliders. Space plays/pauses; ⌘K opens commands; Escape closes. Motion starts paused.<br>Music: “Minimal Techno 01” / Alejandro Magaña (A. M.), <a href="https://mixkit.co/free-stock-music/tech-house/">Mixkit</a> · <a href="https://mixkit.co/license/#musicFree">Stock Music Free License</a>. Excerpt adapted from 128 to 120 BPM for this visual study. Geist: Vercel, SIL OFL 1.1.</p>
+<p id="announcement" class="sr-only" aria-live="polite"></p>
+<audio id="audio" src="./morph/soundtrack.mp3" loop preload="auto"></audio>
+<script>
+'use strict';
+// seek(t), including geometry, content, cursor and camera, has no frame history.
+const DURATION=14, BEAT=.5, $=id=>document.getElementById(id);
+const clamp=(v,a=0,b=1)=>Math.max(a,Math.min(b,v));
+const mix=(a,b,p)=>a+(b-a)*p;
+const smooth=p=>{p=clamp(p);return p*p*p*(p*(p*6-15)+10)};
+// Near-critical closed-form unit step; 0.92 damping gives <0.1% overshoot.
+function spring(t,w=27,z=.92){if(t<=0)return 0;const d=Math.sqrt(1-z*z),wd=w*d;return 1-Math.exp(-z*w*t)*(Math.cos(wd*t)+z/d*Math.sin(wd*t))}
+function steps(t,initial,changes,w=27){let value=initial,previous=initial;for(const [at,target] of changes){value+=(target-previous)*spring(t-at,w);previous=target}return value}
+const scenes=[
+ {at:0,id:'button',label:'01 / BUTTON',w:230,h:76,r:38,z:3.05},
+ {at:.5,id:'loader',label:'02 / LOADER',w:76,h:76,r:38,z:7.2},
+ {at:1.5,id:'check',label:'03 / CHECK',w:76,h:76,r:38,z:7.2},
+ {at:2,id:'island',label:'04 / DYNAMIC ISLAND',w:240,h:64,r:32,z:3.3},
+ {at:2.5,id:'player',label:'05 / MUSIC PLAYER',w:560,h:300,r:38,z:1.6},
+ {at:4.5,id:'volume',label:'06 / VOLUME',w:400,h:80,r:40,z:2.35},
+ {at:6.5,id:'toggle',label:'07 / TOGGLE',w:148,h:76,r:38,z:4.2},
+ {at:7.5,id:'tabs',label:'08 / LIQUID TABS',w:412,h:72,r:36,z:2.2},
+ {at:9,id:'chart',label:'09 / ACTIVITY',w:600,h:320,r:36,z:1.55},
+ {at:10.5,id:'command',label:'10 / COMMAND',w:148,h:76,r:38,z:4.2},
+ {at:11,id:'palette',label:'11 / COMMAND PALETTE',w:600,h:320,r:30,z:1.6},
+ {at:12.5,id:'toast',label:'12 / CONFIRMATION',w:330,h:76,r:38,z:2.55},
+ {at:13,id:'button',label:'01 / BUTTON',w:230,h:76,r:38,z:3.05}
+];
+const geometry=Object.fromEntries(['w','h','r','z'].map(key=>[key,scenes.slice(1).map(s=>[s.at,s[key]])]));
+const contentIds=[...new Set(scenes.map(s=>s.id))];
+const beatNames=['Hover button','Click to load','Loading','Complete','Compact island','Expand player','Play music','Grab progress','Scrub forward','Release to volume','Drag to max','Stretch past max','Release volume','Become toggle','Enable Focus','Become tabs','Select Week','Indicator settles','Open activity','Draw chart','Hover Friday','Command shortcut','Open commands','Type f','Filter fo','Enter Focus','Return to button','Return cursor'];
+$('ruler').innerHTML=beatNames.map((name,i)=>`<rect id="beat-${i}" x="${88+i*46.8}" y="1294" width="${i%4===0?3:2}" height="${i%4===0?23:13}" rx="1" fill="#ccc8c0"><title>${i+1}: ${name}</title></rect>`).join('');
+$('island-wave').innerHTML=Array.from({length:5},(_,i)=>`<path id="wave-${i}" d="M${78+i*5} -3V3"/>`).join('');
+function attrs(id,values){const el=$(id);for(const [key,value] of Object.entries(values))el.setAttribute(key,String(value))}
+// The cursor is authored in surface coordinates, then projected through the same camera.
+const cursorKeys=[[0,50,14],[.48,50,14],[.78,50,14],[1.45,35,23],[2,-12,13],[2.5,-12,13],[3,0,-2],[3.5,-79,68],[4,104,68],[4.5,104,68],[5,43.92,0],[5.5,122,0],[5.85,163,0],[6,163,0],[6.4,72,16],[6.5,38,0],[7,38,0],[7.5,-126,5],[8,0,5],[8.5,0,5],[9,30,35],[9.5,50,10],[10,85,-25],[10.5,15,10],[11,15,10],[11.5,-198,-108],[12,-178,-108],[12.5,-118,0],[13,103,36],[13.5,50,14],[14,50,14]];
+function cursorAt(t){let i=0;while(i<cursorKeys.length-2&&t>cursorKeys[i+1][0])i++;const a=cursorKeys[i],b=cursorKeys[i+1],p=smooth((t-a[0])/(b[0]-a[0]));return{x:mix(a[1],b[1],p),y:mix(a[2],b[2],p)}}
+const clicks=[.5,2.5,3,7,8,11,12.5];
+function direct(t,from,to,start,end){return mix(from,to,smooth((t-start)/(end-start)))}
+function volumeAt(t){if(t<5)return .68;if(t<5.5)return direct(t,.68,1,5,5.5);if(t<5.85)return direct(t,1,1.168,5.5,5.85);if(t<6)return 1.168;return 1+.168*(1-spring(t-6,30))}
+function pose(t){
+ if(!Number.isFinite(t))throw new TypeError('seek requires finite seconds');
+ t=((t%DURATION)+DURATION)%DURATION;
+ // Canonicalize the held seam, including hidden SVG layers, for identical rasterization.
+ if(t>=13.9)t=0;
+ const seam=smooth((t-13.55)/.35);
+ const result={t};
+ for(const key of ['w','h','r','z'])result[key]=mix(steps(t,scenes[0][key],geometry[key]),scenes[0][key],seam);
+ let i=0;while(i<scenes.length-1&&t>=scenes[i+1].at)i++;
+ result.scene=scenes[i];result.index=i;result.cursor=cursorAt(t);
+ result.progress=t<3.5?.338:t<4.5?direct(t,.338,.713,3.5,4):.713;
+ result.volume=volumeAt(t);
+ return result;
+}
+function seek(time){
+ const p=pose(time),t=p.t,{w,h,r,z}=p;
+ attrs('camera',{transform:`translate(720 664) scale(${z})`});
+ const press=clicks.reduce((v,at)=>v+.018*(spring(t-at,65)-spring(t-at-.06,65)),0);
+ // Press compresses the persistent silhouette, not the scene tree.
+ const overdrag=clamp(spring(t-4.5,27))*(1-clamp(spring(t-6.5,27)))*Math.max(0,p.volume-1)*244;
+ const sw=(w+overdrag*2)*(1-press),sh=h*(1-press);
+ for(const id of ['surface','clip'])attrs(id,{x:-sw/2,y:-sh/2,width:sw,height:sh,rx:r});
+ const gray=mix(steps(t,8,[[6.5,44],[7,8],[7.5,8]]),8,smooth((t-13.55)/.35));
+ attrs('surface',{fill:`rgb(${gray},${gray},${gray})`});
+ for(const id of contentIds){let alpha=0;for(let i=0;i<scenes.length;i++){const scene=scenes[i];if(scene.id!==id)continue;const begin=scene.at,end=scenes[i+1]?.at??Infinity;
+ // The click starts exit; incoming text waits until outgoing text is gone.
+ const enter=begin===0?1:smooth((t-begin-.09)/.12),exit=1-smooth((t-end)/.075);
+ alpha=Math.max(alpha,clamp(enter*exit));}
+ const el=$(id);el.style.opacity=String(alpha);el.style.filter=`blur(${(1-alpha)*3}px)`;el.style.pointerEvents=alpha>.55?'auto':'none';el.setAttribute('aria-hidden',String(alpha<=.55));
+ for(const target of [el,...el.querySelectorAll('[tabindex]')])if(target.hasAttribute('tabindex'))target.setAttribute('tabindex',alpha>.55?'0':'-1');
+ }
+ attrs('loader-arc',{transform:`rotate(${(t-.5)*540})`});
+ attrs('check-line',{'stroke-dasharray':1,'stroke-dashoffset':1-clamp(spring(t-1.55,26))});
+ for(let i=0;i<5;i++){const a=3+6*(.5+.5*Math.sin(t*12+i*1.6));attrs(`wave-${i}`,{d:`M${78+i*5} ${-a}V${a}`})}
+ const play=clamp(spring(t-3,32));
+ // Equal vertex counts let triangle halves become two pause bars without a cut.
+ const leftA=[[-8,-14],[-8,10],[1,-2],[1,-2]],leftB=[[-8,-13],[-8,9],[-3,9],[-3,-13]];
+ const rightA=[[1,-2],[1,-2],[11,-2],[11,-2]],rightB=[[3,-13],[3,9],[8,9],[8,-13]];
+ for(const [id,a,b] of [['play-left',leftA,leftB],['play-right',rightA,rightB]])attrs(id,{d:'M'+a.map((v,i)=>`${mix(v[0],b[i][0],play)} ${mix(v[1],b[i][1],play)}`).join('L')+'Z'});
+ attrs('progress-fill',{width:488*p.progress});attrs('progress-knob',{cx:-244+488*p.progress});attrs('scrub-control',{'aria-valuenow':Math.round(p.progress*100)});$('elapsed').textContent=`${Math.floor(p.progress*124/60)}:${String(Math.floor(p.progress*124)%60).padStart(2,'0')}`;
+ const stretch=Math.max(0,p.volume-1)*244;attrs('volume-track',{width:244+stretch});attrs('volume-fill',{width:244*Math.min(1,p.volume)+stretch});attrs('volume-knob',{cx:-122+244*Math.min(1,p.volume)+stretch});attrs('volume-value',{x:175+stretch});$('volume-value').textContent=String(Math.round(Math.min(1,p.volume)*100));attrs('volume',{'aria-valuenow':Math.round(Math.min(1,p.volume)*100)});
+ // Each edge has its own response. The fast leading edge stretches ahead.
+ const liquidL=-64+72*spring(t-7,22)-190*spring(t-7.5,36)+126*spring(t-8,22);
+ const liquidR=-8+72*spring(t-7,35)-134*spring(t-7.5,22)+126*spring(t-8,36);
+ const liquidH=steps(t,56,[[7.5,46]]),liquidAlpha=smooth((t-6.59)/.12)*(1-smooth((t-8.91)/.09));
+ attrs('liquid-shape',{x:liquidL,y:-liquidH/2,width:liquidR-liquidL,height:liquidH,rx:liquidH/2,opacity:liquidAlpha});
+ attrs('toggle-check',{transform:`translate(${(liquidL+liquidR)/2} 0)`,opacity:clamp(spring(t-7.07))});attrs('toggle',{'aria-checked':t>=7?'true':'false'});
+ const selected=t>=8;
+ for(const [id,on] of [['tab-day',!selected],['tab-week',selected],['tab-month',false]]){attrs(id,{'aria-selected':on});$(id).querySelector('text').setAttribute('fill',on?'#080808':'#aaa')}
+ attrs('chart-line',{'stroke-dasharray':1,'stroke-dashoffset':1-clamp(spring(t-9.12,8))});attrs('tooltip',{opacity:clamp(spring(t-10,32))});
+ const query=t>=12?'fo':t>=11.5?'f':'';$('query').textContent=query||'Search commands...';attrs('query',{fill:query?'#faf9f6':'#999'});attrs('caret',{d:`M${query==='fo'?-193:query==='f'?-205:-213} -119V-96`,opacity:query?1:0});attrs('other-results',{opacity:query?0:1});attrs('filter-hint',{opacity:query?1:0});
+ const down=clicks.some(at=>t>=at&&t<at+.075)||(t>=3.5&&t<4.5)||(t>=5&&t<6);
+ const cursorScale=down?.88:1,cx=Math.round(720+p.cursor.x*z),cy=Math.round(664+p.cursor.y*z);
+ const cursorPoints=[[0,0],[0,26],[7,20],[13,32],[18,29],[12,18],[22,18]];
+ attrs('cursor-path',{d:'M'+cursorPoints.map(([x,y])=>`${cx+x*cursorScale} ${cy+y*cursorScale}`).join('L')+'Z'});
+ const beat=t>=13.9?0:Math.min(27,Math.floor(t/BEAT));for(let i=0;i<28;i++)attrs(`beat-${i}`,{fill:i<=beat?'#171717':'#ccc8c0'});
+ $('state-label').textContent=p.scene.label;$('beat-label').textContent=`BAR ${String(Math.floor(beat/4)+1).padStart(2,'0')} / BEAT ${String(beat%4+1).padStart(2,'0')}`;
+ $('timeline').value=String(t);$('clock').textContent=`${t.toFixed(2)} / 14.00`;
+ return {...p,down,beat};
+}
+window.seek=seek;window.study={duration:DURATION,beat:BEAT,scenes,pose,spring,steps,beatNames};
+// Playback/input are clock drivers only; they never feed state into pose or seek.
+let now=0,playing=false,origin=0,drag=null,renderMode=false;
+const audio=$('audio');
+function setTime(t){now=clamp(t,0,DURATION-.000001);seek(now);if(!renderMode){audio.currentTime=now;if(document.activeElement?.closest('[aria-hidden="true"]'))$('stage').focus({preventScroll:true});$('announcement').textContent=pose(now).scene.label}}
+function stop(){playing=false;audio.pause();$('transport').textContent='Play study'}
+function tick(stamp){if(!playing)return;now=((stamp-origin)/1000)%DURATION;seek(now);requestAnimationFrame(tick)}
+async function play(){playing=true;origin=performance.now()-now*1000;audio.currentTime=now;try{await audio.play()}catch{stop();$('announcement').textContent='Audio unavailable. Drag the timeline to inspect the study.';return}$('transport').textContent='Pause study';requestAnimationFrame(tick)}
+$('transport').onclick=()=>playing?stop():void play();$('restart').onclick=()=>{stop();setTime(0)};$('timeline').oninput=e=>{stop();setTime(Number(e.target.value))};
+function jump(t){if(renderMode)return;stop();setTime(t)}
+function activate(t){if(renderMode){now=t;seek(t);return}jump(t+.24)}
+const actions={button:.5,island:2.5,'play-control':3,toggle:7,'tab-week':8,command:11,'focus-result':12.5};
+for(const [id,t] of Object.entries(actions)){$(id).addEventListener('click',()=>activate(t));$(id).addEventListener('keydown',e=>{if(!e.target.closest('[aria-hidden="true"]')&&(e.key==='Enter'||e.key===' ')){e.preventDefault();activate(t)}})}
+$('stage').addEventListener('click',e=>{if(e.target.closest('[role]')||drag||renderMode)return;const next=scenes.find(s=>s.at>now+.001);jump(next?next.at+.24:0)});
+function localX(e){const point=$('stage').createSVGPoint();point.x=e.clientX;point.y=e.clientY;return point.matrixTransform($('camera').getScreenCTM().inverse()).x}
+for(const id of ['scrub-control','volume']){
+ const el=$(id);el.addEventListener('pointerdown',e=>{stop();drag=id;el.setPointerCapture(e.pointerId);if(renderMode)setTime(id==='volume'?5:3.5);e.preventDefault()});
+ el.addEventListener('pointermove',e=>{if(drag!==id)return;const x=localX(e);if(id==='scrub-control'){const value=clamp((x+244)/488,.338,.713);const phase=inverseSmooth((value-.338)/(.713-.338));setTime(3.5+phase*.5)}else{const value=clamp((x+122)/244,.68,1.168);setTime(value<=1?5+inverseSmooth((value-.68)/.32)*.5:5.5+inverseSmooth((value-1)/.168)*.35)}});
+ el.addEventListener('pointerup',e=>{if(drag!==id)return;drag=null;el.releasePointerCapture(e.pointerId);if(renderMode){activate(id==='volume'?6:4.5);return}if(id==='volume'){const v=pose(now).volume;if(v<=1)return;const release=6+inverseSpring(1-(v-1)/.168,30);jump(release)}else jump(4.74)});
+ el.addEventListener('pointercancel',()=>{drag=null});el.addEventListener('keydown',e=>{if(['ArrowLeft','ArrowRight','ArrowDown','ArrowUp'].includes(e.key)){e.preventDefault();jump(clamp(now+(e.key==='ArrowLeft'||e.key==='ArrowDown'?-.04:.04),id==='volume'?5:3.5,id==='volume'?5.85:4))}});
+}
+function inverseSmooth(value){let lo=0,hi=1;for(let i=0;i<30;i++){const mid=(lo+hi)/2;if(smooth(mid)<value)lo=mid;else hi=mid}return(lo+hi)/2}
+function inverseSpring(value,w){let lo=0,hi=.3;for(let i=0;i<30;i++){const mid=(lo+hi)/2;if(spring(mid,w)<clamp(value))lo=mid;else hi=mid}return(lo+hi)/2}
+document.addEventListener('keydown',e=>{if(e.target.closest('.controls'))return;if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='k'){e.preventDefault();activate(11)}else if(e.key==='Escape'){stop();jump(0)}else if(pose(now).scene.id==='palette'&&e.key==='f'){activate(11.5)}else if(pose(now).scene.id==='palette'&&e.key==='o'){activate(12)}else if(pose(now).scene.id==='palette'&&e.key==='Enter'){e.preventDefault();activate(12.5)}else if(e.key===' '&&!e.target.closest('[role]')){e.preventDefault();playing?stop():void play()}});
+window.setRenderMode=value=>{stop();renderMode=value;document.body.dataset.render=String(value);document.querySelector('.controls').hidden=value;document.querySelector('.credits').hidden=value};
+window.inspectAt=setTime;
+seek(0);
+</script>
+</body>
+</html>

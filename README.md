@@ -22,6 +22,19 @@ Open http://127.0.0.1:5173. Desktop-first; use a viewport of at least 1100 × 70
 - Open Controls / Launcher / Notifications / Media with **Ctrl+Alt+C / L / N / M**. **Escape** backs out or collapses; **Ctrl+Alt+Escape** forces collapse. Tab reaches controls; arrows navigate Launcher and Notifications.
 - Enable **Controls details** for mock navigation inside a fixed body. Back or Escape reverses its slide/fade. Material and overlay-palette experiments apply only in Mechanical Morph. Clean view hides comparison tools.
 
+## 0.3.5 beat study
+
+Open **0.3.5 Beat Study** in the toolbar, or `/morph.html`. This separate motion study preserves the comparison prototype. It starts paused; click to step, drag the media sliders, or use the timeline. Space plays/pauses, Ctrl/⌘K opens commands, Escape returns to the button.
+
+```sh
+npm run morph:beats   # inspect renders/beat-sheet.png before the full render
+npm run morph:render  # 1440 square, 60fps, four blended subframes
+```
+
+Both commands export `renders/kanade-0.3.5.html` with embedded Geist and audio; no server or network needed. The full render produces `renders/kanade-0.3.5.mp4`. Requires Chromium and ffmpeg. To regenerate audio, install Python numpy and run `npm run morph:audio`; source music downloads temporarily, never into the repository.
+
+`public/morph.html` owns the beat choreography and pure `window.seek(seconds)` renderer. Mouse/keyboard inputs drive the preview clock; export replays native inputs at beat cues and samples the same choreography independently. `public/morph/audio-analysis.json` records measured tempo, downbeat, processing offset and sound peaks. Source/license notices live in `public/morph/NOTICE.txt`.
+
 ## Baseline and limits
 
 Geometry, tokens, SVG icons, interaction policy and spring/fade behavior were taken from the initial working tree of `../kanade` at commit `08f6e1c`. For upstream intent, read its `CONTEXT.md` and `docs/design.md`; current Rust code takes precedence over planned features.
